@@ -7,6 +7,7 @@ object M3uParser {
 
     fun parse(raw: String, defaultHeaders: Map<String, String> = emptyMap()): List<Channel> {
         val channels = mutableListOf<Channel>()
+        val seenUrls = HashSet<String>()
 
         var pendingName: String? = null
         var pendingLogo: String? = null
@@ -18,13 +19,15 @@ object M3uParser {
                 pendingName = null; pendingLogo = null; pendingGroup = null; pendingHeaders.clear()
                 return
             }
-            channels += Channel(
-                name = pendingName?.takeIf { it.isNotBlank() } ?: UrlUtils.prettyName(url),
-                url = url,
-                logo = pendingLogo,
-                group = pendingGroup,
-                headers = defaultHeaders + pendingHeaders,
-            )
+            if (seenUrls.add(url)) {
+                channels += Channel(
+                    name = pendingName?.takeIf { it.isNotBlank() } ?: UrlUtils.prettyName(url),
+                    url = url,
+                    logo = pendingLogo,
+                    group = pendingGroup,
+                    headers = defaultHeaders + pendingHeaders,
+                )
+            }
             pendingName = null
             pendingLogo = null
             pendingGroup = null

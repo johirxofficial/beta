@@ -1,5 +1,6 @@
 package com.johirxofficial.x.data
 
+import android.content.Context
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
@@ -8,13 +9,16 @@ import java.io.IOException
 import java.util.concurrent.TimeUnit
 
 /**
- * Loads categories from the JSON API and channels from either the same JSON or a
- * separate M3U playlist. Everything is cached in memory per API URL.
+ * Loads categories from the JSON API and channels from M3U/JSON playlists.
+ *
+ * There is intentionally **no cache**: every load hits the network so the app always
+ * shows exactly what the API returns. The only state kept in memory is the list the
+ * current screen is already displaying.
  */
-class Repository(private val settings: Settings) {
+class Repository(@Suppress("UNUSED_PARAMETER") context: Context) {
 
     private val client = OkHttpClient.Builder()
-        .connectTimeout(20, TimeUnit.SECONDS)
+        .connectTimeout(15, TimeUnit.SECONDS)
         .readTimeout(30, TimeUnit.SECONDS)
         .callTimeout(60, TimeUnit.SECONDS)
         .followRedirects(true)
@@ -22,70 +26,43 @@ class Repository(private val settings: Settings) {
         .retryOnConnectionFailure(true)
         .build()
 
-    private var categoryCache: Pair<String, List<Category>>? = null
-    private val channelCache = mutableMapOf<String, MutableList<Channel>>()
-
-    suspend fun loadCategories(force: Boolean = false): List<Category> = withContext(Dispatchers.IO) {
-        val apiUrl = settings.apiUrl
-        val cached = categoryCache
-        if (!force && cached != null && cached.first == apiUrl) return@withContext cached.second
-
-        val body = fetch(apiUrl)
-        val categories = if (looksLikePlaylist(body)) {
-            listOf(
-                Category(
-                    id = "playlist",
-                    name = "Playlist",
-                    inlineChannels = M3uParser.parse(body),
-                ),
-            )
-        } else {
-            PlaylistJsonParser.parseCategories(body)
-        }
-
+    suspend fun categories(apiUrl: String): List<Category> = withContext(Dispatchers.IO) {
+        val categories = parseCategories(fetch(apiUrl))
         if (categories.isEmpty()) {
-            throw IOException("No category found. JSON format check korun.")
+            throw IOException("No category found at ${UrlUtils.hostOf(apiUrl)}")
         }
-
-        categoryCache = apiUrl to categories
-        channelCache.clear()
         categories
     }
 
-    suspend fun loadChannels(category: Category, force: Boolean = false): List<Channel> =
-        withContext(Dispatchers.IO) {
-            if (!force) {
-                if (category.inlineChannels.isNotEmpty()) return@withContext category.inlineChannels
-                channelCache[category.id]?.takeIf { it.isNotEmpty() }?.let { return@withContext it }
-            }
+    suspend fun channels(category: Category): List<Channel> = withContext(Dispatchers.IO) {
+        if (category.inlineChannels.isNotEmpty()) return@withContext category.inlineChannels
 
-            val playlistUrl = category.playlistUrl
-            val channels: List<Channel> = when {
-                playlistUrl != null -> {
-                    val body = fetch(playlistUrl)
-                    if (looksLikePlaylist(body)) {
-                        M3uParser.parse(body)
-                    } else {
-                        PlaylistJsonParser.parseChannels(body)
-                    }
-                }
+        val playlistUrl = category.playlistUrl
+            ?: throw IOException("Ei category te playlist nei")
 
-                category.inlineChannels.isNotEmpty() -> category.inlineChannels
-                else -> emptyList()
-            }
-
-            if (channels.isEmpty()) {
-                throw IOException("Ei category te kono channel paoa jayni.")
-            }
-
-            channelCache[category.id] = channels.toMutableList()
-            channels
+        val body = fetch(playlistUrl)
+        val channels = if (looksLikePlaylist(body)) {
+            M3uParser.parse(body)
+        } else {
+            PlaylistJsonParser.parseChannels(body)
         }
 
-    /** Clears caches, used after the API URL changes. */
-    fun invalidate() {
-        categoryCache = null
-        channelCache.clear()
+        if (channels.isEmpty()) {
+            throw IOException("Ei category te channel paoa jayni")
+        }
+        channels
+    }
+
+    private fun parseCategories(body: String): List<Category> = if (looksLikePlaylist(body)) {
+        listOf(
+            Category(
+                id = "playlist",
+                name = "Playlist",
+                inlineChannels = M3uParser.parse(body),
+            ),
+        )
+    } else {
+        PlaylistJsonParser.parseCategories(body)
     }
 
     private fun looksLikePlaylist(body: String): Boolean {
@@ -98,15 +75,17 @@ class Repository(private val settings: Settings) {
             .url(url)
             .header("User-Agent", UrlUtils.UA)
             .header("Accept", "*/*")
-            .header("Cache-Control", "no-cache")
+            // Explicitly bypass every intermediate cache.
+            .header("Cache-Control", "no-cache, no-store, must-revalidate")
+            .header("Pragma", "no-cache")
             .build()
 
         client.newCall(request).execute().use { response ->
             if (!response.isSuccessful) {
-                throw IOException("HTTP ${response.code} — ${url.substringBefore('?')}")
+                throw IOException("HTTP ${response.code} — ${UrlUtils.hostOf(url)}")
             }
             return response.body?.string()?.takeIf { it.isNotBlank() }
-                ?: throw IOException("Empty response — ${url.substringBefore('?')}")
+                ?: throw IOException("Empty response — ${UrlUtils.hostOf(url)}")
         }
     }
 }

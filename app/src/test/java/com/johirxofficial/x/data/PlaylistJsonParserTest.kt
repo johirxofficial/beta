@@ -135,4 +135,31 @@ class PlaylistJsonParserTest {
         assertEquals("example.com", channels[1].name)
         assertNull(channels[1].logo)
     }
+
+    @Test
+    fun `count hint, type, logo and inline channels come from the api`() {
+        val json = """
+            {
+              "categories": [
+                { "id": "in", "name": "Indian", "type": "country", "channels_count": 849,
+                  "logo": "https://flagcdn.com/w80/in.png",
+                  "playlist_url": "https://iptv-org.github.io/iptv/countries/in.m3u" },
+                { "id": "featured", "name": "Featured", "type": "mixed", "channels_count": 2,
+                  "channels": [
+                    { "name": "One", "url": "https://example.com/1.m3u8" },
+                    { "name": "Two", "url": "https://example.com/2.ts" }
+                  ] }
+              ]
+            }
+        """.trimIndent()
+
+        val categories = PlaylistJsonParser.parseCategories(json)
+
+        assertEquals(849, categories[0].channelCountHint)
+        assertEquals("country", categories[0].type)
+        assertEquals("https://flagcdn.com/w80/in.png", categories[0].logo)
+        assertEquals("mixed", categories[1].type)
+        assertEquals(2, categories[1].channelCountHint)
+        assertEquals(2, categories[1].inlineChannels.size)
+    }
 }

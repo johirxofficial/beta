@@ -70,4 +70,23 @@ class M3uParserTest {
         assertEquals(1, channels.size)
         assertTrue(channels[0].url.endsWith("a.m3u8"))
     }
+
+    @Test
+    fun `duplicate stream urls are dropped`() {
+        val playlist = """
+            #EXTM3U
+            #EXTINF:-1,First
+            https://example.com/same.m3u8
+            #EXTINF:-1,Duplicate
+            https://example.com/same.m3u8
+            #EXTINF:-1,Second
+            https://example.com/other.m3u8
+        """.trimIndent()
+
+        val channels = M3uParser.parse(playlist)
+
+        assertEquals(2, channels.size)
+        assertEquals("First", channels[0].name)
+        assertEquals("Second", channels[1].name)
+    }
 }

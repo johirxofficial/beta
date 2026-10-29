@@ -1,6 +1,9 @@
 package com.johirxofficial.x.data
 
+import androidx.compose.runtime.Immutable
+
 /** A single playable stream. */
+@Immutable
 data class Channel(
     val name: String,
     val url: String,
@@ -8,9 +11,21 @@ data class Channel(
     val group: String? = null,
     /** Extra HTTP headers required by the stream server (Referer, User-Agent, Cookie...). */
     val headers: Map<String, String> = emptyMap(),
-)
+) {
+    val isLive: Boolean
+        get() = url.lowercase().let { it.contains(".m3u8") || it.contains("/live") || it.contains(".ts") }
+
+    /** Parses "(1080p)" style quality tags that IPTV playlists put in channel names. */
+    val quality: String?
+        get() = QUALITY_REGEX.find(name)?.groupValues?.getOrNull(1)
+
+    companion object {
+        private val QUALITY_REGEX = Regex("""\((\d{3,4}p)\)""", RegexOption.IGNORE_CASE)
+    }
+}
 
 /** A category shown on the home screen. */
+@Immutable
 data class Category(
     val id: String,
     val name: String,
@@ -19,4 +34,8 @@ data class Category(
     val playlistUrl: String? = null,
     /** When set, channels are already inside the categories JSON. */
     val inlineChannels: List<Channel> = emptyList(),
+    /** Optional number from the API so the home screen can show a count before loading. */
+    val channelCountHint: Int? = null,
+    /** "country", "genre"... free form label from the API. */
+    val type: String? = null,
 )

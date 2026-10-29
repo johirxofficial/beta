@@ -1,9 +1,0 @@
-#EXTM3U
-#EXTINF:-1 tvg-id="demo1" tvg-logo="" group-title="Indian",Indian HLS Demo
-https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8
-#EXTINF:-1 tvg-id="demo2" tvg-logo="" group-title="Indian",Apple BipBop HLS Demo
-https://devstreaming-cdn.apple.com/videos/streaming/examples/img_bipbop_adv_example_fmp4/master.m3u8
-#EXTINF:-1 tvg-id="demo3" tvg-logo="" group-title="Indian",Big Buck Bunny MP4 Demo
-https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4
-#EXTINF:-1 tvg-id="demo4" tvg-logo="" group-title="Indian",Tears of Steel HLS Demo
-https://test-streams.mux.dev/pts_shift/master.m3u8

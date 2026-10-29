@@ -10,17 +10,28 @@ android {
 
     defaultConfig {
         applicationId = "com.johirxofficial.x"
-        minSdk = 24
+        minSdk = 21
         targetSdk = 35
-        versionCode = 1
-        versionName = "1.0.0"
+        versionCode = 3
+        versionName = "3.0.0"
 
-        // Default JSON API. Can be changed at runtime from the in-app Settings dialog.
+        buildConfigField("String", "DEVELOPER", "\"johirxofficial\"")
+        buildConfigField("String", "PROJECT_URL", "\"https://github.com/johirxofficial/x\"")
+
+        // Primary API (changeable in-app). The public catalog is only used by the
+        // "Public" preset in Settings, never as an automatic fallback.
         buildConfigField(
             "String",
             "DEFAULT_API_URL",
             "\"http://10.31.253.82/live/api/data.json\"",
         )
+        buildConfigField(
+            "String",
+            "FALLBACK_API_URL",
+            "\"https://raw.githubusercontent.com/johirxofficial/x/main/docs/api/categories.json\"",
+        )
+
+        resourceConfigurations += listOf("en", "bn")
 
         vectorDrawables { useSupportLibrary = true }
     }
@@ -31,11 +42,10 @@ android {
             versionNameSuffix = "-debug"
         }
         release {
-            // Kept unminified so the sideloaded APK stays easy to debug.
+            // Unminified so sideloaded builds stay debuggable; see README for R8.
             isMinifyEnabled = false
             isShrinkResources = false
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-            // Signed with the local debug key: installable via sideload, not for Play Store.
             signingConfig = signingConfigs.getByName("debug")
         }
     }
@@ -47,6 +57,9 @@ android {
 
     kotlinOptions {
         jvmTarget = "17"
+        freeCompilerArgs += listOf(
+            "-opt-in=kotlin.RequiresOptIn",
+        )
     }
 
     buildFeatures {

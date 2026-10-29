@@ -1,6 +1,9 @@
 package com.johirxofficial.x.ui
 
+import android.app.PictureInPictureParams
 import android.content.Context
+import android.os.Build
+import android.util.Rational
 import androidx.activity.compose.BackHandler
 import androidx.annotation.OptIn
 import androidx.compose.foundation.background
@@ -18,6 +21,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
@@ -46,6 +50,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
@@ -62,28 +69,37 @@ import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.PlayerView
 import com.johirxofficial.x.data.Channel
 import com.johirxofficial.x.data.UrlUtils
+import com.johirxofficial.x.ui.components.Pill
+import com.johirxofficial.x.ui.theme.Accent
 import okhttp3.OkHttpClient
 import java.util.concurrent.TimeUnit
 
 @OptIn(UnstableApi::class)
 @Composable
-fun PlayerScreen(channel: Channel, onBack: () -> Unit) {
+fun PlayerScreen(
+    channel: Channel,
+    autoPlay: Boolean,
+    isFavorite: Boolean,
+    onToggleFavorite: () -> Unit,
+    onBack: () -> Unit,
+) {
     val context = LocalContext.current
+    val activity = remember(context) { context.findActivity() }
+    val canUsePip = Build.VERSION.SDK_INT >= Build.VERSION_CODES.O
 
     val errorMessage = remember { mutableStateOf<String?>(null) }
     val playbackState = remember { mutableIntStateOf(Player.STATE_IDLE) }
     var resizeMode by remember { mutableIntStateOf(AspectRatioFrameLayout.RESIZE_MODE_FIT) }
     var attempt by remember { mutableIntStateOf(0) }
 
-    val player = remember(channel.url, channel.headers, attempt) {
-        createPlayer(context, channel, errorMessage, playbackState).apply {
+    val player = remember(channel.url, channel.headers, attempt, autoPlay) {
+        createPlayer(context, channel, autoPlay, errorMessage, playbackState).apply {
             setMediaItem(
                 MediaItem.Builder()
                     .setUri(channel.url)
                     .setMimeType(mimeTypeFor(channel.url))
                     .build(),
             )
-            playWhenReady = true
             prepare()
         }
     }
@@ -96,6 +112,16 @@ fun PlayerScreen(channel: Channel, onBack: () -> Unit) {
     DisposableEffect(view) {
         view.keepScreenOn = true
         onDispose { view.keepScreenOn = false }
+    }
+
+    // Full screen playback: hide the system bars while the player is visible.
+    DisposableEffect(activity) {
+        val window = activity?.window
+        val controller = window?.let { WindowCompat.getInsetsController(it, it.decorView) }
+        controller?.hide(WindowInsetsCompat.Type.systemBars())
+        controller?.systemBarsBehavior =
+            WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+        onDispose { controller?.show(WindowInsetsCompat.Type.systemBars()) }
     }
 
     BackHandler(onBack = onBack)
@@ -111,6 +137,7 @@ fun PlayerScreen(channel: Channel, onBack: () -> Unit) {
                     setShowBuffering(PlayerView.SHOW_BUFFERING_NEVER)
                     setKeepScreenOn(true)
                     setShutterBackgroundColor(android.graphics.Color.BLACK)
+                    setBackgroundColor(android.graphics.Color.BLACK)
                 }
             },
             update = { playerView ->
@@ -120,12 +147,38 @@ fun PlayerScreen(channel: Channel, onBack: () -> Unit) {
             modifier = Modifier.fillMaxSize(),
         )
 
-        TopBar(channel = channel, onBack = onBack)
+        TopBar(
+            channel = channel,
+            isFavorite = isFavorite,
+            canUsePip = canUsePip,
+            onBack = onBack,
+            onToggleFavorite = onToggleFavorite,
+            onToggleAspect = {
+                resizeMode = when (resizeMode) {
+                    AspectRatioFrameLayout.RESIZE_MODE_FIT -> AspectRatioFrameLayout.RESIZE_MODE_ZOOM
+                    AspectRatioFrameLayout.RESIZE_MODE_ZOOM -> AspectRatioFrameLayout.RESIZE_MODE_FILL
+                    else -> AspectRatioFrameLayout.RESIZE_MODE_FIT
+                }
+            },
+            resizeModeLabel = when (resizeMode) {
+                AspectRatioFrameLayout.RESIZE_MODE_FIT -> "FIT"
+                AspectRatioFrameLayout.RESIZE_MODE_ZOOM -> "ZOOM"
+                else -> "FILL"
+            },
+            onEnterPip = {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    val params = PictureInPictureParams.Builder()
+                        .setAspectRatio(Rational(16, 9))
+                        .build()
+                    runCatching { activity?.enterPictureInPictureMode(params) }
+                }
+            },
+        )
 
         if (playbackState.intValue == Player.STATE_BUFFERING && errorMessage.value == null) {
             CircularProgressIndicator(
                 modifier = Modifier.align(Alignment.Center),
-                color = MaterialTheme.colorScheme.primary,
+                color = Accent,
             )
         }
 
@@ -143,36 +196,33 @@ fun PlayerScreen(channel: Channel, onBack: () -> Unit) {
 
         Row(
             modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(12.dp),
+                .align(Alignment.BottomStart)
+                .padding(16.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            AspectButton(
-                label = when (resizeMode) {
-                    AspectRatioFrameLayout.RESIZE_MODE_FIT -> "FIT"
-                    AspectRatioFrameLayout.RESIZE_MODE_ZOOM -> "ZOOM"
-                    else -> "FILL"
-                },
-                onClick = {
-                    resizeMode = when (resizeMode) {
-                        AspectRatioFrameLayout.RESIZE_MODE_FIT -> AspectRatioFrameLayout.RESIZE_MODE_ZOOM
-                        AspectRatioFrameLayout.RESIZE_MODE_ZOOM -> AspectRatioFrameLayout.RESIZE_MODE_FILL
-                        else -> AspectRatioFrameLayout.RESIZE_MODE_FIT
-                    }
-                },
-            )
+            if (channel.isLive) Pill(text = "LIVE") else Pill(text = "VOD", color = Color(0xFF94A3B8))
+            channel.quality?.let { Pill(text = it, color = Accent) }
         }
     }
 }
 
 @Composable
-private fun TopBar(channel: Channel, onBack: () -> Unit) {
+private fun TopBar(
+    channel: Channel,
+    isFavorite: Boolean,
+    canUsePip: Boolean,
+    resizeModeLabel: String,
+    onBack: () -> Unit,
+    onToggleFavorite: () -> Unit,
+    onToggleAspect: () -> Unit,
+    onEnterPip: () -> Unit,
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .background(
                 Brush.verticalGradient(
-                    listOf(Color.Black.copy(alpha = 0.75f), Color.Transparent),
+                    listOf(Color.Black.copy(alpha = 0.8f), Color.Transparent),
                 ),
             )
             .statusBarsPadding()
@@ -186,6 +236,7 @@ private fun TopBar(channel: Channel, onBack: () -> Unit) {
                 tint = Color.White,
             )
         }
+
         Column(Modifier.weight(1f)) {
             Text(
                 text = channel.name,
@@ -196,23 +247,29 @@ private fun TopBar(channel: Channel, onBack: () -> Unit) {
                 overflow = TextOverflow.Ellipsis,
             )
             Text(
-                text = "X Player",
+                text = channel.group ?: "X Player",
                 style = MaterialTheme.typography.labelSmall,
                 color = Color.White.copy(alpha = 0.6f),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
             )
         }
-        Spacer(Modifier.width(48.dp))
-    }
-}
 
-@Composable
-private fun AspectButton(label: String, onClick: () -> Unit) {
-    TextButton(onClick = onClick) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelMedium,
-            color = Color.White,
-        )
+        IconButton(onClick = onToggleFavorite) {
+            Icon(
+                imageVector = Icons.Default.Star,
+                contentDescription = "Favorite",
+                tint = if (isFavorite) Accent else Color.White.copy(alpha = 0.55f),
+            )
+        }
+        TextButton(onClick = onToggleAspect) {
+            Text(text = resizeModeLabel, color = Color.White, style = MaterialTheme.typography.labelMedium)
+        }
+        if (canUsePip) {
+            TextButton(onClick = onEnterPip) {
+                Text(text = "PiP", color = Color.White, style = MaterialTheme.typography.labelMedium)
+            }
+        }
     }
 }
 
@@ -222,7 +279,7 @@ private fun ErrorOverlay(message: String, onRetry: () -> Unit, modifier: Modifie
         modifier = modifier
             .fillMaxWidth()
             .padding(24.dp)
-            .background(Color.Black.copy(alpha = 0.82f), RoundedCornerShape(18.dp))
+            .background(Color.Black.copy(alpha = 0.85f), RoundedCornerShape(18.dp))
             .padding(20.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
@@ -254,6 +311,7 @@ private fun ErrorOverlay(message: String, onRetry: () -> Unit, modifier: Modifie
 private fun createPlayer(
     context: Context,
     channel: Channel,
+    autoPlay: Boolean,
     errorMessage: MutableState<String?>,
     playbackState: MutableIntState,
 ): ExoPlayer {
@@ -269,7 +327,6 @@ private fun createPlayer(
         .setDefaultRequestProperties(channel.headers)
 
     val dataSourceFactory = DefaultDataSource.Factory(context, httpDataSource)
-
     val mediaSourceFactory = DefaultMediaSourceFactory(dataSourceFactory)
 
     val audioAttributes = AudioAttributes.Builder()
@@ -288,6 +345,7 @@ private fun createPlayer(
         .setHandleAudioBecomingNoisy(true)
         .build()
         .apply {
+            playWhenReady = autoPlay
             addListener(object : Player.Listener {
                 override fun onPlaybackStateChanged(state: Int) {
                     playbackState.intValue = state

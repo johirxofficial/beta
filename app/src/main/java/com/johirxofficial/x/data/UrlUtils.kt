@@ -23,4 +23,7 @@ internal object UrlUtils {
         val host = runCatching { java.net.URI(url).host }.getOrNull()
         return host?.removePrefix("www.")?.takeIf { it.isNotBlank() } ?: url
     }
+
+    fun hostOf(url: String): String =
+        runCatching { java.net.URI(url).host }.getOrNull()?.removePrefix("www.") ?: url
 }

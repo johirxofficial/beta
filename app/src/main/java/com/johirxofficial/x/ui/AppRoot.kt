@@ -5,6 +5,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.johirxofficial.x.data.Channel
 
 private object Routes {
     const val HOME = "home"
@@ -15,32 +16,56 @@ private object Routes {
 @Composable
 fun AppRoot(viewModel: MainViewModel) {
     val navController = rememberNavController()
+    val layout = rememberLayoutInfo()
+
+    val settingsActions = SettingsActions(
+        saveApiUrl = viewModel::saveApiUrl,
+        resetApiUrl = viewModel::resetApiUrl,
+        setAutoPlay = viewModel::setAutoPlay,
+        setShowLogos = viewModel::setShowLogos,
+        reload = {
+            navController.popBackStack(Routes.HOME, inclusive = false)
+            viewModel.refresh()
+        },
+        clearHistory = viewModel::clearHistory,
+    )
 
     NavHost(navController = navController, startDestination = Routes.HOME) {
         composable(Routes.HOME) {
             HomeScreen(
                 state = viewModel.home,
-                onRefresh = viewModel::refreshHome,
-                onRetry = viewModel::refreshHome,
+                layout = layout,
+                onRefresh = viewModel::refresh,
+                onRetry = viewModel::refresh,
                 onOpenCategory = { category ->
                     viewModel.openCategory(category)
                     navController.navigate(Routes.CHANNELS)
                 },
-                onSaveApiUrl = viewModel::saveApiUrl,
-                onResetApiUrl = viewModel::resetApiUrl,
+                onPlayChannel = { channel ->
+                    viewModel.play(channel)
+                    navController.navigate(Routes.PLAYER)
+                },
+                onToggleFavorite = viewModel::toggleFavorite,
+                onMessageShown = viewModel::consumeMessage,
+                settingsActions = settingsActions,
             )
         }
 
         composable(Routes.CHANNELS) {
             ChannelsScreen(
                 state = viewModel.channels,
+                layout = layout,
+                showLogos = viewModel.home.showLogos,
+                favorites = viewModel.home.favorites,
                 onBack = { navController.popBackStack() },
                 onQueryChange = viewModel::setQuery,
-                onRetry = viewModel::reloadChannels,
-                onPlay = { channel ->
-                    viewModel.selectChannel(channel)
+                onGroupChange = viewModel::setGroup,
+                onRetry = viewModel::retryChannels,
+                onPlay = { channel: Channel ->
+                    viewModel.play(channel)
                     navController.navigate(Routes.PLAYER)
                 },
+                onToggleFavorite = viewModel::toggleFavorite,
             )
         }
 
@@ -49,7 +74,13 @@ fun AppRoot(viewModel: MainViewModel) {
             if (channel == null) {
                 LaunchedEffect(Unit) { navController.popBackStack() }
             } else {
-                PlayerScreen(channel = channel, onBack = { navController.popBackStack() })
+                PlayerScreen(
+                    channel = channel,
+                    autoPlay = viewModel.home.autoPlay,
+                    isFavorite = viewModel.home.favorites.any { it.url == channel.url },
+                    onToggleFavorite = { viewModel.toggleFavorite(channel) },
+                    onBack = { navController.popBackStack() },
+                )
             }
         }
     }

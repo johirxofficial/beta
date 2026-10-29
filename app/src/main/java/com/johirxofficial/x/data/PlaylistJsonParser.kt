@@ -31,6 +31,7 @@ object PlaylistJsonParser {
         arrayOf("channels", "items", "streams", "links", "list", "entries", "playlist_items", "data")
     private val CHANNEL_URL_KEYS =
         arrayOf("url", "link", "stream", "stream_url", "src", "file", "source", "m3u8", "path", "hls", "uri")
+    private val COUNT_KEYS = arrayOf("channels_count", "channel_count", "count", "total", "channels")
 
     fun parseCategories(raw: String): List<Category> {
         val root = jsonOrNull(raw) ?: return emptyList()
@@ -109,6 +110,8 @@ object PlaylistJsonParser {
             logo = firstString(obj, *LOGO_KEYS),
             playlistUrl = playlist,
             inlineChannels = channels,
+            channelCountHint = firstInt(obj, *COUNT_KEYS)?.takeIf { it > 0 } ?: channels.size.takeIf { it > 0 },
+            type = firstString(obj, "type", "kind", "genre"),
         )
     }
 
@@ -172,6 +175,16 @@ object PlaylistJsonParser {
         for (key in keys) {
             val value = obj.entries.firstOrNull { it.key.equals(key, ignoreCase = true) }?.value
             if (value is JsonArray) return value
+        }
+        return null
+    }
+
+    private fun firstInt(obj: JsonObject, vararg keys: String): Int? {
+        for (key in keys) {
+            val value = obj.entries.firstOrNull { it.key.equals(key, ignoreCase = true) }?.value ?: continue
+            if (value is JsonPrimitive) {
+                value.contentOrNull?.trim()?.toIntOrNull()?.let { return it }
+            }
         }
         return null
     }

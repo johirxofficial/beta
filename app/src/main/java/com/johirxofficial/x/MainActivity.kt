@@ -9,6 +9,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import com.johirxofficial.x.data.Repository
 import com.johirxofficial.x.data.Settings
+import com.johirxofficial.x.data.UserDataStore
 import com.johirxofficial.x.ui.AppRoot
 import com.johirxofficial.x.ui.MainViewModel
 import com.johirxofficial.x.ui.theme.XTheme
@@ -16,10 +17,12 @@ import com.johirxofficial.x.ui.theme.XTheme
 class MainActivity : ComponentActivity() {
 
     private val viewModel: MainViewModel by viewModels {
-        MainViewModel.Factory(Repository(settings), settings)
+        MainViewModel.Factory(
+            repository = Repository(applicationContext),
+            settings = Settings(applicationContext),
+            userData = UserDataStore(applicationContext),
+        )
     }
-
-    private val settings by lazy { Settings(applicationContext) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
