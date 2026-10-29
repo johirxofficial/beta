@@ -267,16 +267,10 @@ private fun createPlayer(
     val httpDataSource = OkHttpDataSource.Factory(httpClient)
         .setUserAgent(UrlUtils.UA)
         .setDefaultRequestProperties(channel.headers)
-        .setAllowCrossProtocolRedirects(true)
 
     val dataSourceFactory = DefaultDataSource.Factory(context, httpDataSource)
 
     val mediaSourceFactory = DefaultMediaSourceFactory(dataSourceFactory)
-        .setLiveConfiguration(
-            MediaItem.LiveConfiguration.Builder()
-                .setTargetOffsetMs(3_000)
-                .build(),
-        )
 
     val audioAttributes = AudioAttributes.Builder()
         .setUsage(C.USAGE_MEDIA)

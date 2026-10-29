@@ -19,7 +19,7 @@ android {
         buildConfigField(
             "String",
             "DEFAULT_API_URL",
-            "\"https://raw.githubusercontent.com/johirxofficial/x/main/docs/api/categories.json\"",
+            "\"http://10.31.253.82/live/api/data.json\"",
         )
 
         vectorDrawables { useSupportLibrary = true }

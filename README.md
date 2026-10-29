@@ -25,8 +25,11 @@ page and install it on your phone (allow "install from unknown sources").
 
 ## Changing the API
 
-The default API is
-`https://raw.githubusercontent.com/johirxofficial/x/main/docs/api/categories.json`.
+The default API is a test endpoint (`http://10.31.253.82/live/api/data.json`, a LAN
+address), so on a fresh install the app expects that server to be reachable. A public
+demo JSON lives in this repo at
+`https://raw.githubusercontent.com/johirxofficial/x/main/docs/api/categories.json`
+and can be loaded with **Settings → Use demo API**.
 
 Open the app → **Settings (gear icon)** → paste your own JSON URL → **Save**.
 The URL is stored on the device, so you can point the app at any server at any time.
