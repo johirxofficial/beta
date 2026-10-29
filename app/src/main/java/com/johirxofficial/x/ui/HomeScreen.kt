@@ -28,6 +28,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -414,7 +415,7 @@ private fun MiniChannelCard(
             }
             IconButton(onClick = onToggleFavorite, modifier = Modifier.size(28.dp)) {
                 Icon(
-                    imageVector = androidx.compose.material.icons.Icons.Default.Star,
+                    imageVector = Icons.Default.Star,
                     contentDescription = if (isFavorite) "Remove favorite" else "Add favorite",
                     tint = if (isFavorite) Accent else MaterialTheme.colorScheme.outline,
                     modifier = Modifier.size(16.dp),
