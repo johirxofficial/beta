@@ -1,0 +1,68 @@
+{
+  "name": "X Demo API",
+  "version": 1,
+  "updated": "2026-10-29",
+  "tips": "Ei file ta apnar nijer server e upload kore app er Settings theke URL change korle apnar playlist chalbe.",
+  "categories": [
+    {
+      "id": "indian",
+      "name": "Indian",
+      "logo": "",
+      "playlist_url": "https://raw.githubusercontent.com/johirxofficial/x/main/docs/api/indian.m3u"
+    },
+    {
+      "id": "bangla",
+      "name": "Bangla",
+      "channels": [
+        {
+          "name": "Bangla HLS (demo)",
+          "url": "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8"
+        },
+        {
+          "name": "BipBop HLS (demo)",
+          "url": "https://devstreaming-cdn.apple.com/videos/streaming/examples/img_bipbop_adv_example_fmp4/master.m3u8"
+        },
+        {
+          "name": "Tears of Steel HLS (demo)",
+          "url": "https://test-streams.mux.dev/pts_shift/master.m3u8"
+        }
+      ]
+    },
+    {
+      "id": "sports",
+      "name": "Sports",
+      "channels": [
+        {
+          "name": "Big Buck Bunny MP4 (demo)",
+          "url": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
+        },
+        {
+          "name": "Elephants Dream MP4 (demo)",
+          "url": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4"
+        },
+        {
+          "name": "Sintel MP4 (demo)",
+          "url": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4"
+        }
+      ]
+    },
+    {
+      "id": "others",
+      "name": "Others",
+      "channels": [
+        {
+          "name": "Mux Test 001 (demo)",
+          "url": "https://test-streams.mux.dev/test_001/stream.m3u8"
+        },
+        {
+          "name": "MPEG-TS segment (demo)",
+          "url": "https://devstreaming-cdn.apple.com/videos/streaming/examples/bipbop_4x3/gear1/fileSequence0.ts"
+        },
+        {
+          "name": "BipBop 4x3 HLS (demo)",
+          "url": "https://devstreaming-cdn.apple.com/videos/streaming/examples/bipbop_4x3/bipbop_4x3_variant.m3u8"
+        }
+      ]
+    }
+  ]
+}
