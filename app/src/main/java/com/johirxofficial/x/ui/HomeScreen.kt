@@ -64,7 +64,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -113,7 +112,6 @@ fun HomeScreen(
     var showSettings by remember { mutableStateOf(false) }
     var errorDismissed by remember { mutableStateOf(false) }
     val snackbarHost = remember { SnackbarHostState() }
-    val uriHandler = LocalUriHandler.current
 
     LaunchedEffect(state.error) {
         errorDismissed = false
@@ -243,8 +241,8 @@ fun HomeScreen(
                         onClick = {
                             errorDismissed = true
                             if (state.update == null) {
-                                // Nothing loaded yet, so point at the release page directly.
-                                uriHandler.openUri("${BuildConfig.PROJECT_URL}/releases/latest")
+                                // Nothing loaded yet, so the release page is the only useful target.
+                                settingsActions.openUpdateLink()
                             } else {
                                 showSettings = true
                             }
