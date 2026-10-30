@@ -247,7 +247,7 @@ fun ChannelsScreen(
                             showLogos = showLogos,
                             favoriteUrls = favoriteUrls,
                             columns = channelGridColumns.coerceIn(2, 4),
-                            horizontalPadding = layout.padding.dp,
+                            horizontalPadding = layout.padding,
                             onPlay = onPlay,
                             onToggleFavorite = onToggleFavorite,
                         )
