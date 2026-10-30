@@ -1,4 +1,4 @@
-package com.johirxofficial.x.data
+package com.johirxofficial.beta.data
 
 import androidx.compose.runtime.Immutable
 

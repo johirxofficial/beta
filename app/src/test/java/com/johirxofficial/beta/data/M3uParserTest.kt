@@ -1,4 +1,4 @@
-package com.johirxofficial.x.data
+package com.johirxofficial.beta.data
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -88,5 +88,45 @@ class M3uParserTest {
         assertEquals(2, channels.size)
         assertEquals("First", channels[0].name)
         assertEquals("Second", channels[1].name)
+    }
+
+    @Test
+    fun `resolves relative stream urls against the playlist url`() {
+        val playlist = """
+            #EXTM3U
+            #EXTINF:-1,Relative
+            live/one.m3u8
+            #EXTINF:-1,Absolute
+            https://cdn.example.com/two.m3u8
+        """.trimIndent()
+
+        val channels = M3uParser.parse(
+            playlist,
+            baseUrl = "https://example.com/api/playlist.php?token=abc",
+        )
+
+        assertEquals(2, channels.size)
+        assertEquals("https://example.com/api/live/one.m3u8", channels[0].url)
+        assertEquals("https://cdn.example.com/two.m3u8", channels[1].url)
+    }
+
+    @Test
+    fun `reads extgrp unquoted attributes and kodiprop headers`() {
+        val playlist = """
+            #EXTM3U
+            #EXTGRP:News
+            #EXTINF:-1 tvg-logo=https://example.com/logo.png tvg-name=Headline group-title=World,Headline News
+            #KODIPROP:inputstream.adaptive.stream_headers=Referer=https://site.example/&User-Agent=CustomUA/1.0
+            https://example.com/news.m3u8
+        """.trimIndent()
+
+        val channels = M3uParser.parse(playlist)
+
+        assertEquals(1, channels.size)
+        assertEquals("Headline News", channels[0].name)
+        assertEquals("https://example.com/logo.png", channels[0].logo)
+        assertEquals("World", channels[0].group)
+        assertEquals("https://site.example/", channels[0].headers["Referer"])
+        assertEquals("CustomUA/1.0", channels[0].headers["User-Agent"])
     }
 }

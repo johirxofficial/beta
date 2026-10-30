@@ -1,4 +1,4 @@
-package com.johirxofficial.x.data
+package com.johirxofficial.beta.data
 
 import android.content.Context
 import org.json.JSONArray
@@ -7,7 +7,7 @@ import org.json.JSONObject
 /** Favorites + recently watched channels, persisted as compact JSON in SharedPreferences. */
 class UserDataStore(context: Context) {
 
-    private val prefs = context.applicationContext.getSharedPreferences("x_user", Context.MODE_PRIVATE)
+    private val prefs = context.applicationContext.getSharedPreferences("beta_user", Context.MODE_PRIVATE)
 
     fun favorites(): List<Channel> = decode(prefs.getString(KEY_FAVORITES, null))
 

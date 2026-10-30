@@ -1,10 +1,9 @@
-const { app, BrowserWindow, ipcMain, shell } = require('electron');
+const { app, BrowserWindow, ipcMain, shell, session } = require('electron');
 const path = require('path');
 const http = require('http');
 const https = require('https');
 
-const USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 ' +
-  '(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
+const USER_AGENT = 'Dalvik/2.1.0 (Linux; U; Android 12; SM-A217F Build/SP1A.210812.016) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.45 Mobile Safari/537.36';
 
 function fetchText(url, redirects) {
   const depth = redirects || 0;
@@ -44,7 +43,7 @@ function fetchText(url, redirects) {
       }
     );
 
-    request.setTimeout(25000, () => request.destroy(new Error('Timeout')));
+    request.setTimeout(60000, () => request.destroy(new Error('Timeout')));
     request.on('error', reject);
   });
 }
@@ -87,6 +86,7 @@ function createWindow() {
   });
 
   window.loadFile(path.join(__dirname, 'renderer', 'index.html'));
+  window.webContents.setUserAgent(USER_AGENT);
   window.webContents.setWindowOpenHandler(({ url }) => {
     shell.openExternal(url);
     return { action: 'deny' };
@@ -94,6 +94,8 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
+  // Keep every renderer/HLS/fetch request on the same Dalvik user agent as Android.
+  session.defaultSession.setUserAgent(USER_AGENT);
   createWindow();
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {

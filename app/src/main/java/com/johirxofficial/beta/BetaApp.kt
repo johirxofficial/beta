@@ -1,4 +1,4 @@
-package com.johirxofficial.x
+package com.johirxofficial.beta
 
 import android.app.Application
 import coil.ImageLoader

@@ -1,4 +1,4 @@
-package com.johirxofficial.x.ui
+package com.johirxofficial.beta.ui
 
 import android.content.res.Configuration
 import androidx.compose.runtime.Composable

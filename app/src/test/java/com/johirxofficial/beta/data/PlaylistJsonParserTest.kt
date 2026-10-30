@@ -1,4 +1,4 @@
-package com.johirxofficial.x.data
+package com.johirxofficial.beta.data
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -91,7 +91,7 @@ class PlaylistJsonParserTest {
 
     /** The real API used by this app: 13 categories, some with placeholder urls. */
     @Test
-    fun `parses the live x api document`() {
+    fun `parses the live beta api document`() {
         val json = """
             {
               "app_name": "beta",
@@ -161,5 +161,58 @@ class PlaylistJsonParserTest {
         assertEquals("mixed", categories[1].type)
         assertEquals(2, categories[1].channelCountHint)
         assertEquals(2, categories[1].inlineChannels.size)
+    }
+
+    @Test
+    fun `v2 source object supports playlist urls of any extension`() {
+        val json = """
+            {
+              "schema": "beta.catalog.v2",
+              "categories": [
+                { "id": "php", "name": "PHP", "type": "server", "count": 120,
+                  "source": { "type": "playlist", "format": "auto", "url": "https://example.com/get.php?type=m3u" } },
+                { "id": "plain", "name": "Plain", "count": 8,
+                  "source": { "type": "playlist", "url": "https://example.com/channels" } }
+              ]
+            }
+        """.trimIndent()
+
+        val categories = PlaylistJsonParser.parseCategories(json)
+
+        assertEquals(2, categories.size)
+        assertEquals("https://example.com/get.php?type=m3u", categories[0].playlistUrl)
+        assertEquals(120, categories[0].channelCountHint)
+        assertEquals("https://example.com/channels", categories[1].playlistUrl)
+        assertEquals(8, categories[1].channelCountHint)
+    }
+
+    @Test
+    fun `v2 source object supports inline channels`() {
+        val json = """
+            {
+              "categories": [
+                { "id": "featured", "name": "Featured", "type": "mixed", "count": 1,
+                  "source": { "type": "inline", "channels": [
+                    { "name": "One", "url": "https://example.com/one.m3u8" }
+                  ] } }
+              ]
+            }
+        """.trimIndent()
+
+        val category = PlaylistJsonParser.parseCategories(json).single()
+
+        assertEquals(1, category.inlineChannels.size)
+        assertEquals("One", category.inlineChannels[0].name)
+        assertEquals(1, category.channelCountHint)
+    }
+
+    @Test
+    fun `nested source channels work for channel json endpoints`() {
+        val channels = PlaylistJsonParser.parseChannels(
+            """{ "source": { "channels": [ { "name": "One", "url": "https://example.com/one.m3u8" } ] } }""",
+        )
+
+        assertEquals(1, channels.size)
+        assertEquals("One", channels[0].name)
     }
 }

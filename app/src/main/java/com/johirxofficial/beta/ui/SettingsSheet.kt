@@ -1,4 +1,4 @@
-package com.johirxofficial.x.ui
+package com.johirxofficial.beta.ui
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.horizontalScroll
@@ -39,11 +39,11 @@ import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.johirxofficial.x.BuildConfig
-import com.johirxofficial.x.R
-import com.johirxofficial.x.data.AppUpdate
-import com.johirxofficial.x.data.Settings
-import com.johirxofficial.x.ui.theme.Accent
+import com.johirxofficial.beta.BuildConfig
+import com.johirxofficial.beta.R
+import com.johirxofficial.beta.data.AppUpdate
+import com.johirxofficial.beta.data.Settings
+import com.johirxofficial.beta.ui.theme.Accent
 
 data class SettingsActions(
     val saveApiUrl: (String) -> Unit,
@@ -52,6 +52,9 @@ data class SettingsActions(
     val setShowLogos: (Boolean) -> Unit,
     val setTheme: (String) -> Unit,
     val setGridColumns: (Int) -> Unit,
+    val setHomeLayout: (String) -> Unit,
+    val setChannelLayout: (String) -> Unit,
+    val setChannelGridColumns: (Int) -> Unit,
     val reload: () -> Unit,
     val clearHistory: () -> Unit,
     val downloadUpdate: () -> Unit,
@@ -67,6 +70,9 @@ fun SettingsSheet(
     showLogos: Boolean,
     theme: String,
     gridColumns: Int,
+    homeLayout: String,
+    channelLayout: String,
+    channelGridColumns: Int,
     update: AppUpdate?,
     updateAvailable: Boolean,
     updateState: UpdateUiState,
@@ -123,7 +129,26 @@ fun SettingsSheet(
                 }
             }
             Text(
-                text = "Home grid",
+                text = "Home layout",
+                style = MaterialTheme.typography.bodyMedium,
+            )
+            Row(
+                modifier = Modifier.horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                listOf(
+                    Settings.LAYOUT_GRID to "Grid",
+                    Settings.LAYOUT_LIST to "List",
+                ).forEach { (value, label) ->
+                    FilterChip(
+                        selected = homeLayout == value,
+                        onClick = { actions.setHomeLayout(value) },
+                        label = { Text(label) },
+                    )
+                }
+            }
+            Text(
+                text = "Home grid columns",
                 style = MaterialTheme.typography.bodyMedium,
             )
             Row(
@@ -136,14 +161,51 @@ fun SettingsSheet(
                         selected = gridColumns == value,
                         onClick = { actions.setGridColumns(value) },
                         label = { Text(label) },
+                        enabled = homeLayout == Settings.LAYOUT_GRID,
                     )
                 }
             }
             Text(
-                text = "Choose how many category cards appear in each row. Auto follows the screen size.",
+                text = "Use List for one wide category per row, or Grid with 2–6 cards per row. Auto follows the screen size.",
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+            Text(
+                text = "Channel layout",
+                style = MaterialTheme.typography.bodyMedium,
+            )
+            Row(
+                modifier = Modifier.horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                listOf(
+                    Settings.LAYOUT_LIST to "List",
+                    Settings.LAYOUT_GRID to "Grid",
+                ).forEach { (value, label) ->
+                    FilterChip(
+                        selected = channelLayout == value,
+                        onClick = { actions.setChannelLayout(value) },
+                        label = { Text(label) },
+                    )
+                }
+            }
+            Text(
+                text = "Channel grid columns",
+                style = MaterialTheme.typography.bodyMedium,
+            )
+            Row(
+                modifier = Modifier.horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                listOf(2, 3, 4).forEach { value ->
+                    FilterChip(
+                        selected = channelGridColumns == value,
+                        onClick = { actions.setChannelGridColumns(value) },
+                        label = { Text(value.toString()) },
+                        enabled = channelLayout == Settings.LAYOUT_GRID,
+                    )
+                }
+            }
 
             HorizontalDivider(Modifier.padding(vertical = 8.dp))
 
@@ -374,7 +436,7 @@ fun SettingsSheet(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             TextButton(onClick = { uriHandler.openUri(BuildConfig.PROJECT_URL) }) {
-                Text("github.com/${BuildConfig.DEVELOPER}/x")
+                Text("github.com/${BuildConfig.DEVELOPER}/beta")
             }
 
             Spacer(Modifier.height(24.dp))

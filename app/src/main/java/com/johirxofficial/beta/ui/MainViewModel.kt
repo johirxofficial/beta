@@ -1,4 +1,4 @@
-package com.johirxofficial.x.ui
+package com.johirxofficial.beta.ui
 
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -6,15 +6,15 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import com.johirxofficial.x.BuildConfig
-import com.johirxofficial.x.data.AppUpdate
-import com.johirxofficial.x.data.Category
-import com.johirxofficial.x.data.Channel
-import com.johirxofficial.x.data.Repository
-import com.johirxofficial.x.data.Settings
-import com.johirxofficial.x.data.UpdateManager
-import com.johirxofficial.x.data.UrlUtils
-import com.johirxofficial.x.data.UserDataStore
+import com.johirxofficial.beta.BuildConfig
+import com.johirxofficial.beta.data.AppUpdate
+import com.johirxofficial.beta.data.Category
+import com.johirxofficial.beta.data.Channel
+import com.johirxofficial.beta.data.Repository
+import com.johirxofficial.beta.data.Settings
+import com.johirxofficial.beta.data.UpdateManager
+import com.johirxofficial.beta.data.UrlUtils
+import com.johirxofficial.beta.data.UserDataStore
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import java.io.File
@@ -35,6 +35,9 @@ data class HomeUiState(
     val showLogos: Boolean = true,
     val theme: String = Settings.THEME_SYSTEM,
     val gridColumns: Int = 0,
+    val homeLayout: String = Settings.LAYOUT_GRID,
+    val channelLayout: String = Settings.LAYOUT_LIST,
+    val channelGridColumns: Int = 2,
     val message: String? = null,
     val notices: List<String> = emptyList(),
     val update: AppUpdate? = null,
@@ -72,6 +75,9 @@ class MainViewModel(
             showLogos = settings.showLogos,
             theme = settings.theme,
             gridColumns = settings.gridColumns,
+            homeLayout = settings.homeLayout,
+            channelLayout = settings.channelLayout,
+            channelGridColumns = settings.channelGridColumns,
             favorites = userData.favorites(),
             recent = userData.recent(),
         ),
@@ -163,6 +169,21 @@ class MainViewModel(
     fun setGridColumns(columns: Int) {
         settings.gridColumns = columns
         home = home.copy(gridColumns = settings.gridColumns)
+    }
+
+    fun setHomeLayout(layout: String) {
+        settings.homeLayout = layout
+        home = home.copy(homeLayout = settings.homeLayout)
+    }
+
+    fun setChannelLayout(layout: String) {
+        settings.channelLayout = layout
+        home = home.copy(channelLayout = settings.channelLayout)
+    }
+
+    fun setChannelGridColumns(columns: Int) {
+        settings.channelGridColumns = columns
+        home = home.copy(channelGridColumns = settings.channelGridColumns)
     }
 
     fun clearHistory() {

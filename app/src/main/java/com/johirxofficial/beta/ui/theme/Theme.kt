@@ -1,4 +1,4 @@
-package com.johirxofficial.x.ui.theme
+package com.johirxofficial.beta.ui.theme
 
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Typography

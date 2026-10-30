@@ -119,8 +119,6 @@ jobs:
           for f in *.apk; do
             cp "$f" "beta-${GITHUB_REF_NAME}.apk"
             cp "$f" "beta-latest.apk"
-            # Compatibility copy for installs that still poll the old v4 update URL.
-            cp "$f" "X-latest.apk"
             rm "$f"
           done
           ls -l

@@ -1,4 +1,4 @@
-package com.johirxofficial.x
+package com.johirxofficial.beta
 
 import android.graphics.Color
 import android.os.Bundle
@@ -9,13 +9,13 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.LaunchedEffect
-import com.johirxofficial.x.data.Repository
-import com.johirxofficial.x.data.Settings
-import com.johirxofficial.x.data.UpdateManager
-import com.johirxofficial.x.data.UserDataStore
-import com.johirxofficial.x.ui.AppRoot
-import com.johirxofficial.x.ui.MainViewModel
-import com.johirxofficial.x.ui.theme.BetaTheme
+import com.johirxofficial.beta.data.Repository
+import com.johirxofficial.beta.data.Settings
+import com.johirxofficial.beta.data.UpdateManager
+import com.johirxofficial.beta.data.UserDataStore
+import com.johirxofficial.beta.ui.AppRoot
+import com.johirxofficial.beta.ui.MainViewModel
+import com.johirxofficial.beta.ui.theme.BetaTheme
 
 class MainActivity : ComponentActivity() {
 

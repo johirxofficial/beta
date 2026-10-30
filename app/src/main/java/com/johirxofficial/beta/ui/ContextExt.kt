@@ -1,4 +1,4 @@
-package com.johirxofficial.x.ui
+package com.johirxofficial.beta.ui
 
 import android.app.Activity
 import android.content.Context

@@ -1,4 +1,4 @@
-package com.johirxofficial.x.ui
+package com.johirxofficial.beta.ui
 
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -23,6 +24,10 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.itemsIndexed as gridItemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -58,12 +63,13 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
-import com.johirxofficial.x.data.Channel
-import com.johirxofficial.x.ui.components.EmptyState
-import com.johirxofficial.x.ui.components.ErrorState
-import com.johirxofficial.x.ui.components.Pill
-import com.johirxofficial.x.ui.components.TruncatedMeta
-import com.johirxofficial.x.ui.theme.Accent
+import com.johirxofficial.beta.data.Channel
+import com.johirxofficial.beta.data.Settings
+import com.johirxofficial.beta.ui.components.EmptyState
+import com.johirxofficial.beta.ui.components.ErrorState
+import com.johirxofficial.beta.ui.components.Pill
+import com.johirxofficial.beta.ui.components.TruncatedMeta
+import com.johirxofficial.beta.ui.theme.Accent
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
@@ -72,6 +78,8 @@ fun ChannelsScreen(
     layout: LayoutInfo,
     showLogos: Boolean,
     favorites: List<Channel>,
+    channelLayout: String,
+    channelGridColumns: Int,
     onBack: () -> Unit,
     onQueryChange: (String) -> Unit,
     onGroupChange: (String?) -> Unit,
@@ -233,37 +241,158 @@ fun ChannelsScreen(
                 }
 
                 else -> {
-                    LazyColumn(
-                        contentPadding = PaddingValues(
-                            start = layout.padding.dp,
-                            end = layout.padding.dp,
-                            top = 4.dp,
-                            bottom = 20.dp,
-                        ),
-                        verticalArrangement = Arrangement.spacedBy(6.dp),
-                        modifier = Modifier.fillMaxSize(),
-                    ) {
-                        grouped.forEach { (group, channels) ->
-                            stickyHeader(key = "header_$group") {
-                                GroupHeader(name = group, count = channels.size)
-                            }
-                            itemsIndexed(
-                                items = channels,
-                                key = { index, channel -> "ch_${group}_${index}_${channel.url.hashCode()}" },
-                            ) { _, channel ->
-                                ChannelRow(
-                                    channel = channel,
-                                    showLogo = showLogos,
-                                    isFavorite = favoriteUrls.contains(channel.url),
-                                    onClick = { onPlay(channel) },
-                                    onToggleFavorite = { onToggleFavorite(channel) },
-                                )
+                    if (channelLayout == Settings.LAYOUT_GRID) {
+                        ChannelGrid(
+                            grouped = grouped,
+                            showLogos = showLogos,
+                            favoriteUrls = favoriteUrls,
+                            columns = channelGridColumns.coerceIn(2, 4),
+                            horizontalPadding = layout.padding.dp,
+                            onPlay = onPlay,
+                            onToggleFavorite = onToggleFavorite,
+                        )
+                    } else {
+                        LazyColumn(
+                            contentPadding = PaddingValues(
+                                start = layout.padding.dp,
+                                end = layout.padding.dp,
+                                top = 4.dp,
+                                bottom = 20.dp,
+                            ),
+                            verticalArrangement = Arrangement.spacedBy(6.dp),
+                            modifier = Modifier.fillMaxSize(),
+                        ) {
+                            grouped.forEach { (group, channels) ->
+                                stickyHeader(key = "header_$group") {
+                                    GroupHeader(name = group, count = channels.size)
+                                }
+                                itemsIndexed(
+                                    items = channels,
+                                    key = { index, channel -> "ch_${group}_${index}_${channel.url.hashCode()}" },
+                                ) { _, channel ->
+                                    ChannelRow(
+                                        channel = channel,
+                                        showLogo = showLogos,
+                                        isFavorite = favoriteUrls.contains(channel.url),
+                                        onClick = { onPlay(channel) },
+                                        onToggleFavorite = { onToggleFavorite(channel) },
+                                    )
+                                }
                             }
                         }
                     }
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun ChannelGrid(
+    grouped: Map<String, List<Channel>>,
+    showLogos: Boolean,
+    favoriteUrls: Set<String>,
+    columns: Int,
+    horizontalPadding: Int,
+    onPlay: (Channel) -> Unit,
+    onToggleFavorite: (Channel) -> Unit,
+) {
+    LazyVerticalGrid(
+        columns = GridCells.Fixed(columns),
+        contentPadding = PaddingValues(
+            start = horizontalPadding.dp,
+            end = horizontalPadding.dp,
+            top = 4.dp,
+            bottom = 20.dp,
+        ),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = Modifier.fillMaxSize(),
+    ) {
+        grouped.forEach { (group, channels) ->
+            item(
+                key = "grid_header_$group",
+                span = { GridItemSpan(maxLineSpan) },
+            ) {
+                GroupHeader(name = group, count = channels.size)
+            }
+            gridItemsIndexed(
+                items = channels,
+                key = { index, channel -> "grid_${group}_${index}_${channel.url.hashCode()}" },
+            ) { _, channel ->
+                ChannelGridCard(
+                    channel = channel,
+                    showLogo = showLogos,
+                    isFavorite = favoriteUrls.contains(channel.url),
+                    onClick = { onPlay(channel) },
+                    onToggleFavorite = { onToggleFavorite(channel) },
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ChannelGridCard(
+    channel: Channel,
+    showLogo: Boolean,
+    isFavorite: Boolean,
+    onClick: () -> Unit,
+    onToggleFavorite: () -> Unit,
+) {
+    val interaction = remember { MutableInteractionSource() }
+    val focused by interaction.collectIsFocusedAsState()
+    val shape = RoundedCornerShape(14.dp)
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = 124.dp)
+            .clip(shape)
+            .background(
+                if (focused) MaterialTheme.colorScheme.surfaceContainerHigh
+                else MaterialTheme.colorScheme.surface,
+            )
+            .border(
+                width = if (focused) 1.5.dp else 0.dp,
+                color = if (focused) Accent else Color.Transparent,
+                shape = shape,
+            )
+            .clickable(
+                interactionSource = interaction,
+                indication = LocalIndication.current,
+                onClick = onClick,
+            )
+            .padding(10.dp),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            ChannelLogo(channel = channel, showLogo = showLogo)
+            Spacer(Modifier.weight(1f))
+            IconButton(onClick = onToggleFavorite, modifier = Modifier.size(30.dp)) {
+                Icon(
+                    imageVector = Icons.Default.Star,
+                    contentDescription = if (isFavorite) "Remove favorite" else "Add favorite",
+                    tint = if (isFavorite) Accent else MaterialTheme.colorScheme.outline,
+                    modifier = Modifier.size(18.dp),
+                )
+            }
+        }
+        Spacer(Modifier.size(8.dp))
+        Text(
+            text = channel.name,
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.SemiBold,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+        )
+        Spacer(Modifier.size(2.dp))
+        Text(
+            text = channel.group ?: "Live TV",
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
     }
 }
 

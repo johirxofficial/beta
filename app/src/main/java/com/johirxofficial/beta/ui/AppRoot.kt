@@ -1,4 +1,4 @@
-package com.johirxofficial.x.ui
+package com.johirxofficial.beta.ui
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -7,7 +7,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.johirxofficial.x.data.Channel
+import com.johirxofficial.beta.data.Channel
 
 private object Routes {
     const val HOME = "home"
@@ -28,6 +28,9 @@ fun AppRoot(viewModel: MainViewModel) {
         setShowLogos = viewModel::setShowLogos,
         setTheme = viewModel::setTheme,
         setGridColumns = viewModel::setGridColumns,
+        setHomeLayout = viewModel::setHomeLayout,
+        setChannelLayout = viewModel::setChannelLayout,
+        setChannelGridColumns = viewModel::setChannelGridColumns,
         reload = {
             navController.popBackStack(Routes.HOME, inclusive = false)
             viewModel.refresh()
@@ -68,6 +71,8 @@ fun AppRoot(viewModel: MainViewModel) {
                 layout = layout,
                 showLogos = viewModel.home.showLogos,
                 favorites = viewModel.home.favorites,
+                channelLayout = viewModel.home.channelLayout,
+                channelGridColumns = viewModel.home.channelGridColumns,
                 onBack = { navController.popBackStack() },
                 onQueryChange = viewModel::setQuery,
                 onGroupChange = viewModel::setGroup,

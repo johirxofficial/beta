@@ -1,4 +1,4 @@
-package com.johirxofficial.x.data
+package com.johirxofficial.beta.data
 
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
@@ -21,12 +21,16 @@ object PlaylistJsonParser {
 
     private val json = Json { ignoreUnknownKeys = true; isLenient = true }
 
-    private val NESTED_LIST_KEYS = listOf("categories", "playlists", "sections", "groups", "items", "data")
+    private val NESTED_LIST_KEYS =
+        listOf("categories", "catalog", "playlists", "sections", "groups", "items", "data")
     private val NAME_KEYS = arrayOf("name", "title", "category", "label", "group", "group_title", "tvg_name")
     private val ID_KEYS = arrayOf("id", "slug", "key", "code", "category_id")
     private val LOGO_KEYS = arrayOf("logo", "icon", "image", "poster", "thumbnail", "tvg_logo", "cover")
-    private val PLAYLIST_KEYS =
-        arrayOf("playlist_url", "playlist", "m3u", "m3u_url", "m3u8", "source", "url", "link", "file")
+    private val SOURCE_KEYS = arrayOf("source", "feed", "playlist_source", "playlist")
+    private val PLAYLIST_KEYS = arrayOf(
+        "playlist_url", "playlist", "m3u", "m3u_url", "m3u8", "source", "url", "link", "file",
+        "endpoint", "channels_url", "stream_url",
+    )
     private val CHANNEL_LIST_KEYS =
         arrayOf("channels", "items", "streams", "links", "list", "entries", "playlist_items", "data")
     private val CHANNEL_URL_KEYS =
@@ -61,8 +65,12 @@ object PlaylistJsonParser {
             is JsonArray -> root
             is JsonObject -> {
                 val nested = NESTED_LIST_KEYS.firstNotNullOfOrNull { key -> root[key] as? JsonArray }
+                val sourceObject = SOURCE_KEYS.firstNotNullOfOrNull { key -> root[key] as? JsonObject }
                 nested?.toList()
                     ?: (root["channels"] as? JsonArray)?.toList()
+                    ?: sourceObject?.let { source ->
+                        CHANNEL_LIST_KEYS.firstNotNullOfOrNull { key -> source[key] as? JsonArray }
+                    }?.toList()
                     ?: listOf(root)
             }
             else -> emptyList()
@@ -108,18 +116,29 @@ object PlaylistJsonParser {
     private fun categoryFrom(obj: JsonObject, index: Int): Category {
         val name = firstString(obj, *NAME_KEYS) ?: "Category ${index + 1}"
         val id = firstString(obj, *ID_KEYS) ?: slugify(name).ifBlank { "category_$index" }
-        val playlist = firstString(obj, *PLAYLIST_KEYS)?.takeIf { UrlUtils.isStreamUrl(it) }
-        val channels = firstArray(obj, *CHANNEL_LIST_KEYS)
+        val source = firstObject(obj, *SOURCE_KEYS)
+
+        val playlist = firstString(obj, *PLAYLIST_KEYS)
+            ?.takeIf { UrlUtils.isStreamUrl(it) }
+            ?: source?.let { firstString(it, *PLAYLIST_KEYS) }
+                ?.takeIf { UrlUtils.isStreamUrl(it) }
+
+        val channels = (
+            firstArray(obj, *CHANNEL_LIST_KEYS)
+                ?: source?.let { firstArray(it, *CHANNEL_LIST_KEYS) }
+            )
             ?.mapNotNull { channelFrom(it) }
             .orEmpty()
 
         return Category(
             id = id,
             name = name,
-            logo = firstString(obj, *LOGO_KEYS),
+            logo = firstString(obj, *LOGO_KEYS) ?: source?.let { firstString(it, *LOGO_KEYS) },
             playlistUrl = playlist,
             inlineChannels = channels,
-            channelCountHint = firstInt(obj, *COUNT_KEYS)?.takeIf { it > 0 } ?: channels.size.takeIf { it > 0 },
+            channelCountHint = firstInt(obj, *COUNT_KEYS)?.takeIf { it > 0 }
+                ?: source?.let { firstInt(it, *COUNT_KEYS) }?.takeIf { it > 0 }
+                ?: channels.size.takeIf { it > 0 },
             type = firstString(obj, "type", "kind", "genre"),
         )
     }

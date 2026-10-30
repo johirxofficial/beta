@@ -62,6 +62,8 @@
         <p id="player-sub" class="muted small"></p>
       </div>
       <button id="btn-player-channels" class="ghost" title="Channel list">Channels</button>
+      <button id="btn-player-prev" class="ghost" title="Previous channel">Previous</button>
+      <button id="btn-player-next" class="ghost" title="Next channel">Next</button>
       <button id="btn-player-favorite" class="icon-btn" title="Favorite">&#9733;</button>
       <button id="btn-aspect" class="ghost" title="Aspect ratio">FIT</button>
     </div>
@@ -86,6 +88,11 @@
     </div>
     <div class="panel-body">
       <h4>App layout</h4>
+      <label class="muted small" for="home-layout-select">Home layout</label>
+      <select id="home-layout-select" class="search">
+        <option value="grid">Grid</option>
+        <option value="list">List</option>
+      </select>
       <label class="muted small" for="grid-select">Home grid columns</label>
       <select id="grid-select" class="search">
         <option value="0">Auto</option>
@@ -94,6 +101,17 @@
         <option value="4">4</option>
         <option value="5">5</option>
         <option value="6">6</option>
+      </select>
+      <label class="muted small" for="channel-layout-select">Channel layout</label>
+      <select id="channel-layout-select" class="search">
+        <option value="list">List</option>
+        <option value="grid">Grid</option>
+      </select>
+      <label class="muted small" for="channel-columns-select">Channel grid columns</label>
+      <select id="channel-columns-select" class="search">
+        <option value="2">2</option>
+        <option value="3">3</option>
+        <option value="4">4</option>
       </select>
 
       <h4>App update</h4>
@@ -128,7 +146,7 @@
         </div>
       </div>
       <p class="muted small">Developer: johirxofficial &middot; MIT License &middot; Windows build</p>
-      <button id="btn-project" class="ghost full">github.com/johirxofficial/x</button>
+      <button id="btn-project" class="ghost full">github.com/johirxofficial/beta</button>
       <div class="spacer"></div>
     </div>
   </aside>

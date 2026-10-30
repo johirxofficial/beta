@@ -5,18 +5,18 @@
 }
 
 android {
-    namespace = "com.johirxofficial.x"
+    namespace = "com.johirxofficial.beta"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.johirxofficial.x"
+        applicationId = "com.johirxofficial.beta"
         minSdk = 21
         targetSdk = 35
-        versionCode = 5
-        versionName = "5.0.0"
+        versionCode = 523
+        versionName = "5.2.3"
 
         buildConfigField("String", "DEVELOPER", "\"johirxofficial\"")
-        buildConfigField("String", "PROJECT_URL", "\"https://github.com/johirxofficial/x\"")
+        buildConfigField("String", "PROJECT_URL", "\"https://github.com/johirxofficial/beta\"")
 
         // Primary API (changeable in-app). The public catalog is only used by the
         // "Public" preset in Settings, never as an automatic fallback.
@@ -28,7 +28,7 @@ android {
         buildConfigField(
             "String",
             "FALLBACK_API_URL",
-            "\"https://raw.githubusercontent.com/johirxofficial/x/main/docs/api/categories.json\"",
+            "\"https://raw.githubusercontent.com/johirxofficial/beta/main/docs/api/categories.json\"",
         )
 
         resourceConfigurations += listOf("en")

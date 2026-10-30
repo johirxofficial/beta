@@ -1,4 +1,4 @@
-package com.johirxofficial.x.ui
+package com.johirxofficial.beta.ui
 
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.BorderStroke
@@ -70,14 +70,15 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
-import com.johirxofficial.x.BuildConfig
-import com.johirxofficial.x.data.Category
-import com.johirxofficial.x.data.Channel
-import com.johirxofficial.x.ui.components.ErrorState
-import com.johirxofficial.x.ui.components.Pill
-import com.johirxofficial.x.ui.components.SectionHeader
-import com.johirxofficial.x.ui.components.SourceDot
-import com.johirxofficial.x.ui.theme.Accent
+import com.johirxofficial.beta.BuildConfig
+import com.johirxofficial.beta.data.Category
+import com.johirxofficial.beta.data.Channel
+import com.johirxofficial.beta.data.Settings
+import com.johirxofficial.beta.ui.components.ErrorState
+import com.johirxofficial.beta.ui.components.Pill
+import com.johirxofficial.beta.ui.components.SectionHeader
+import com.johirxofficial.beta.ui.components.SourceDot
+import com.johirxofficial.beta.ui.theme.Accent
 
 private val CategoryGradients = listOf(
     listOf(Color(0xFF0E7490), Color(0xFF083344)),
@@ -214,6 +215,9 @@ fun HomeScreen(
             showLogos = state.showLogos,
             theme = state.theme,
             gridColumns = state.gridColumns,
+            homeLayout = state.homeLayout,
+            channelLayout = state.channelLayout,
+            channelGridColumns = state.channelGridColumns,
             update = state.update,
             updateAvailable = updateAvailable,
             updateState = updateState,
@@ -302,9 +306,10 @@ private fun HomeContent(
     onOpenSettings: () -> Unit,
 ) {
     val columns = state.gridColumns.takeIf { it in 2..6 } ?: layout.columns
+    val listMode = state.homeLayout == Settings.LAYOUT_LIST
 
     LazyVerticalGrid(
-        columns = GridCells.Fixed(columns),
+        columns = GridCells.Fixed(if (listMode) 1 else columns),
         contentPadding = PaddingValues(
             start = layout.padding.dp,
             end = layout.padding.dp,
@@ -354,6 +359,7 @@ private fun HomeContent(
             CategoryCard(
                 category = category,
                 index = index,
+                listMode = listMode,
                 onClick = { onOpenCategory(category) },
             )
         }
@@ -457,7 +463,7 @@ fun LetterBadge(text: String, size: Dp = 44.dp) {
 }
 
 @Composable
-private fun CategoryCard(category: Category, index: Int, onClick: () -> Unit) {
+private fun CategoryCard(category: Category, index: Int, listMode: Boolean, onClick: () -> Unit) {
     val interaction = remember { MutableInteractionSource() }
     val focused by interaction.collectIsFocusedAsState()
     val scale by animateFloatAsState(if (focused) 1.03f else 1f, label = "categoryScale")
@@ -471,7 +477,7 @@ private fun CategoryCard(category: Category, index: Int, onClick: () -> Unit) {
         colors = CardDefaults.cardColors(containerColor = Color.Transparent),
         modifier = Modifier
             .fillMaxWidth()
-            .aspectRatio(1.32f)
+            .then(if (listMode) Modifier.height(88.dp) else Modifier.aspectRatio(1.32f))
             .graphicsLayer {
                 scaleX = scale
                 scaleY = scale

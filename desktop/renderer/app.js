@@ -3,8 +3,8 @@
 /* beta — Windows desktop client (Electron renderer). */
 
 const DEFAULT_API = 'http://10.31.253.82/live/api/data.json';
-const PUBLIC_API = 'https://raw.githubusercontent.com/johirxofficial/x/main/docs/api/categories.json';
-const PROJECT_URL = 'https://github.com/johirxofficial/x';
+const PUBLIC_API = 'https://raw.githubusercontent.com/johirxofficial/beta/main/docs/api/categories.json';
+const PROJECT_URL = 'https://github.com/johirxofficial/beta';
 
 const GRADIENTS = [
   ['#0E7490', '#0B3C47'],
@@ -23,7 +23,7 @@ const ASPECTS = ['contain', 'cover', 'fill'];
 const ASPECT_LABELS = ['FIT', 'ZOOM', 'STRETCH'];
 
 const state = {
-  apiUrl: localStorage.getItem('x.apiUrl') || DEFAULT_API,
+  apiUrl: localStorage.getItem('beta.apiUrl') || DEFAULT_API,
   categories: [],
   notices: [],
   update: null,
@@ -35,10 +35,13 @@ const state = {
   query: '',
   current: null,
   aspect: 0,
-  columns: Number(localStorage.getItem('x.columns') || '0') || 0,
+  columns: Number(localStorage.getItem('beta.columns') || '0') || 0,
+  homeLayout: localStorage.getItem('beta.homeLayout') || 'grid',
+  channelLayout: localStorage.getItem('beta.channelLayout') || 'list',
+  channelColumns: Number(localStorage.getItem('beta.channelColumns') || '2') || 2,
   hls: null,
   mpegts: null,
-  appVersion: '5.0.0',
+  appVersion: '5.2.3',
 };
 
 /* ---------------------------------------------------------------- helpers */
@@ -133,8 +136,8 @@ function messageFor(error) {
 }
 
 async function fetchText(url) {
-  if (window.xapi && typeof window.xapi.fetchText === 'function') {
-    return window.xapi.fetchText(url);
+  if (window.betaapi && typeof window.betaapi.fetchText === 'function') {
+    return window.betaapi.fetchText(url);
   }
   const response = await fetch(url, { cache: 'no-store' });
   if (!response.ok) throw new Error('HTTP ' + response.status);
@@ -142,8 +145,8 @@ async function fetchText(url) {
 }
 
 function openExternal(url) {
-  if (window.xapi && typeof window.xapi.openExternal === 'function') {
-    return window.xapi.openExternal(url);
+  if (window.betaapi && typeof window.betaapi.openExternal === 'function') {
+    return window.betaapi.openExternal(url);
   }
   window.open(url, '_blank', 'noopener');
   return Promise.resolve(true);
@@ -205,12 +208,18 @@ function buildHeaders(raw) {
 function normalizeCategory(raw, index) {
   if (!raw || typeof raw !== 'object') return null;
   const name = firstString(raw, ['name', 'title', 'category', 'category_name']) || 'Category ' + (index + 1);
-  const playlist = firstString(raw, ['playlist_url', 'playlist', 'm3u', 'm3u_url', 'm3u8', 'source', 'url', 'link', 'file']);
-  const inlineList = raw.channels || raw.items;
+  const source = raw.source && typeof raw.source === 'object' ? raw.source : null;
+  const playlist = firstString(
+    raw,
+    ['playlist_url', 'playlist', 'm3u', 'm3u_url', 'm3u8', 'url', 'link', 'file', 'endpoint', 'channels_url', 'stream_url']
+  ) || (source
+    ? firstString(source, ['playlist_url', 'playlist', 'm3u', 'm3u_url', 'm3u8', 'url', 'link', 'file', 'endpoint'])
+    : null);
+  const inlineList = raw.channels || raw.items || (source && (source.channels || source.items));
   const channels = Array.isArray(inlineList)
     ? inlineList.map((item) => normalizeChannel(item)).filter(Boolean)
     : [];
-  const hint = Number(raw.channels_count || raw.channel_count || raw.count) || 0;
+  const hint = Number(raw.channels_count || raw.channel_count || raw.count || (source && source.count)) || 0;
   return {
     id: firstString(raw, ['id', 'slug', 'key']) || slugify(name) + '_' + index,
     name,
@@ -231,19 +240,36 @@ function parseCatalog(text) {
       update: null,
     };
   }
-  const list = Array.isArray(data.categories) ? data.categories : [];
+  const catalog = data.catalog && typeof data.catalog === 'object' && !Array.isArray(data.catalog)
+    ? data.catalog
+    : data;
+  const list = Array.isArray(catalog.categories) ? catalog.categories : [];
   return {
     categories: list.map((item, index) => normalizeCategory(item, index)).filter(Boolean),
     notices: collectNotices(data),
-    update: data.update || data.app_update || data.appUpdate || null,
+    update: data.update || data.app_update || data.appUpdate || catalog.update || null,
   };
 }
 
 function looksLikeM3u(text) {
-  return /^\s*#EXTM3U/im.test(text) || /^\s*#EXTINF/im.test(text);
+  const head = stripBom(text).slice(0, 65536).toLowerCase();
+  return head.indexOf('#extm3u') >= 0 || head.indexOf('#extinf') >= 0;
 }
 
-function parseM3u(text) {
+function resolveStreamUrl(value, baseUrl) {
+  const text = String(value || '').trim();
+  if (!text) return null;
+  if (isStreamUrl(text)) return text;
+  if (!baseUrl) return null;
+  try {
+    const resolved = new URL(text, baseUrl).toString();
+    return isStreamUrl(resolved) ? resolved : null;
+  } catch (error) {
+    return null;
+  }
+}
+
+function parseM3u(text, baseUrl) {
   const lines = stripBom(text).split(/\r?\n/);
   const seen = new Set();
   const channels = [];
@@ -255,11 +281,26 @@ function parseM3u(text) {
     if (!line) continue;
 
     if (/^#EXTINF/i.test(line)) {
-      const logo = /tvg-logo="([^"]*)"/i.exec(line);
-      const group = /group-title="([^"]*)"/i.exec(line);
+      const quoted = {};
+      const bare = {};
+      let match;
+      const quotedRegex = /([A-Za-z0-9_-]+)="([^"]*)"/g;
+      while ((match = quotedRegex.exec(line)) !== null) quoted[match[1].toLowerCase()] = match[2];
+      const bareRegex = /([A-Za-z0-9_-]+)=([^\s,"]+)/g;
+      while ((match = bareRegex.exec(line)) !== null) bare[match[1].toLowerCase()] = match[2];
+      const attributes = Object.assign({}, bare, quoted);
       const name = line.substring(line.lastIndexOf(',') + 1).trim();
-      pending = { name: name || null, logo: logo ? logo[1] : null, group: group ? group[1] : null };
-      headers = {};
+      pending = {
+        name: name || attributes['tvg-name'] || null,
+        logo: attributes['tvg-logo'] || attributes.logo || null,
+        group: attributes['group-title'] || attributes.group || null,
+      };
+      continue;
+    }
+
+    if (/^#EXTGRP:/i.test(line)) {
+      pending = pending || {};
+      pending.group = line.substring('#EXTGRP:'.length).trim() || null;
       continue;
     }
 
@@ -272,16 +313,29 @@ function parseM3u(text) {
         if (key === 'http-referrer' || key === 'http-referer') headers.Referer = value;
         if (key === 'http-user-agent') headers['User-Agent'] = value;
         if (key === 'http-cookie') headers.Cookie = value;
+        if (key === 'http-origin') headers.Origin = value;
+      }
+      continue;
+    }
+
+    if (/^#KODIPROP:/i.test(line)) {
+      const option = line.substring('#KODIPROP:'.length);
+      const eq = option.indexOf('=');
+      if (eq > 0 && option.substring(0, eq).toLowerCase().indexOf('stream_headers') >= 0) {
+        option.substring(eq + 1).split('&').forEach((pair) => {
+          const name = pair.substring(0, pair.indexOf('=')).trim();
+          const value = pair.substring(pair.indexOf('=') + 1).trim();
+          if (name && value) headers[name] = value;
+        });
       }
       continue;
     }
 
     if (line.charAt(0) === '#') continue;
-    if (!isStreamUrl(line)) continue;
-
-    const url = line.split('#')[0].trim();
-    if (seen.has(url)) {
+    const url = resolveStreamUrl(line.split('#')[0], baseUrl);
+    if (!url || seen.has(url)) {
       pending = null;
+      headers = {};
       continue;
     }
     seen.add(url);
@@ -291,7 +345,7 @@ function parseM3u(text) {
       url,
       logo: pending && pending.logo ? pending.logo : null,
       group: pending && pending.group ? pending.group : null,
-      headers,
+      headers: Object.assign({}, headers),
       quality: qualityOf(name),
     });
     pending = null;
@@ -303,13 +357,18 @@ function parseM3u(text) {
 
 function parseChannelJson(text) {
   const data = JSON.parse(stripBom(text));
+  const source = !Array.isArray(data) && data && data.source && typeof data.source === 'object'
+    ? data.source
+    : null;
   const list = Array.isArray(data)
     ? data
     : Array.isArray(data.channels)
       ? data.channels
       : Array.isArray(data.items)
         ? data.items
-        : [];
+        : source && Array.isArray(source.channels)
+          ? source.channels
+          : [];
   return list.map((item) => normalizeChannel(item)).filter(Boolean);
 }
 
@@ -338,13 +397,31 @@ function renderFooter() {
 
 function applyLayout() {
   const grid = $('category-grid');
-  if (state.columns >= 2 && state.columns <= 6) {
+  const listMode = state.homeLayout === 'list';
+  grid.classList.toggle('layout-list', listMode);
+  if (listMode) {
+    grid.style.gridTemplateColumns = '1fr';
+  } else if (state.columns >= 2 && state.columns <= 6) {
     grid.style.gridTemplateColumns = 'repeat(' + state.columns + ', minmax(0, 1fr))';
   } else {
     grid.style.gridTemplateColumns = '';
   }
+
+  const list = $('channel-list');
+  if (list) {
+    const channelGrid = state.channelLayout === 'grid';
+    list.classList.toggle('grid-mode', channelGrid);
+    list.style.setProperty('--channel-columns', String(Math.min(4, Math.max(2, state.channelColumns || 2))));
+  }
+
   const select = $('grid-select');
   if (select) select.value = String(state.columns);
+  const homeSelect = $('home-layout-select');
+  if (homeSelect) homeSelect.value = listMode ? 'list' : 'grid';
+  const channelSelect = $('channel-layout-select');
+  if (channelSelect) channelSelect.value = state.channelLayout === 'grid' ? 'grid' : 'list';
+  const channelColumns = $('channel-columns-select');
+  if (channelColumns) channelColumns.value = String(Math.min(4, Math.max(2, state.channelColumns || 2)));
 }
 
 function renderCategories() {
@@ -502,6 +579,7 @@ function renderChannelList() {
       if (channel) toggleFavorite(channel);
     });
   });
+  applyLayout();
 }
 
 /* ---------------------------------------------------------------- actions */
@@ -566,7 +644,19 @@ async function openCategory(category) {
 async function fetchCategoryChannels(category) {
   if (!category.playlistUrl) throw new Error('This category has no playlist URL.');
   const text = await fetchText(category.playlistUrl);
-  const channels = looksLikeM3u(text) ? parseM3u(text) : parseChannelJson(text);
+  let channels = [];
+  if (looksLikeM3u(text)) {
+    channels = parseM3u(text, category.playlistUrl);
+  } else {
+    try {
+      channels = parseChannelJson(text);
+    } catch (error) {
+      channels = [];
+    }
+    // Plain URL lists and unusual server wrappers are valid too. Detect by content,
+    // never by the .m3u / .php / extension-less suffix of the endpoint.
+    if (!channels.length) channels = parseM3u(text, category.playlistUrl);
+  }
   if (!channels.length) throw new Error('No playable channels found in this playlist.');
   return channels;
 }
@@ -584,7 +674,7 @@ function toggleFavorite(channel) {
       quality: channel.quality || null,
     });
   }
-  localStorage.setItem('x.favorites', JSON.stringify(state.favorites));
+  localStorage.setItem('beta.favorites', JSON.stringify(state.favorites));
   renderFavorites();
   if (state.channels.length) renderChannelList();
   updatePlayerFavorite();
@@ -678,6 +768,15 @@ function playChannel(channel) {
   showView('player');
   showPlayerControls();
   startPlayback(channel);
+}
+
+function changeDesktopChannel(step) {
+  const list = playerChannelSource();
+  if (!list.length) return;
+  const index = state.current ? list.findIndex((item) => item.url === state.current.url) : -1;
+  const base = index >= 0 ? index : 0;
+  const target = list[(base + step + list.length) % list.length];
+  if (target && (!state.current || target.url !== state.current.url)) playChannel(target);
 }
 
 function updatePlayerFavorite() {
@@ -784,6 +883,9 @@ function renderSettings() {
     : 'You are on the latest version.';
   $('api-input').value = state.apiUrl;
   $('grid-select').value = String(state.columns);
+  $('home-layout-select').value = state.homeLayout === 'list' ? 'list' : 'grid';
+  $('channel-layout-select').value = state.channelLayout === 'grid' ? 'grid' : 'list';
+  $('channel-columns-select').value = String(Math.min(4, Math.max(2, state.channelColumns || 2)));
   $('settings-error').textContent = '';
 }
 
@@ -803,7 +905,7 @@ function saveApi() {
     return;
   }
   state.apiUrl = value;
-  localStorage.setItem('x.apiUrl', value);
+  localStorage.setItem('beta.apiUrl', value);
   state.category = null;
   state.channels = [];
   state.activeGroup = null;
@@ -843,7 +945,7 @@ function showView(name) {
 
 function loadFavorites() {
   try {
-    const parsed = JSON.parse(localStorage.getItem('x.favorites') || '[]');
+    const parsed = JSON.parse(localStorage.getItem('beta.favorites') || '[]');
     return Array.isArray(parsed) ? parsed.filter((item) => item && item.url) : [];
   } catch (error) {
     return [];
@@ -873,6 +975,8 @@ function init() {
   });
 
   $('btn-player-back').addEventListener('click', closePlayer);
+  $('btn-player-prev').addEventListener('click', () => changeDesktopChannel(-1));
+  $('btn-player-next').addEventListener('click', () => changeDesktopChannel(1));
   $('btn-player-channels').addEventListener('click', togglePlayerChannels);
   $('btn-player-channels-close').addEventListener('click', closePlayerChannels);
   $('btn-player-retry').addEventListener('click', () => {
@@ -888,7 +992,22 @@ function init() {
 
   $('grid-select').addEventListener('change', (event) => {
     state.columns = Number(event.target.value) || 0;
-    localStorage.setItem('x.columns', String(state.columns));
+    localStorage.setItem('beta.columns', String(state.columns));
+    applyLayout();
+  });
+  $('home-layout-select').addEventListener('change', (event) => {
+    state.homeLayout = event.target.value === 'list' ? 'list' : 'grid';
+    localStorage.setItem('beta.homeLayout', state.homeLayout);
+    applyLayout();
+  });
+  $('channel-layout-select').addEventListener('change', (event) => {
+    state.channelLayout = event.target.value === 'grid' ? 'grid' : 'list';
+    localStorage.setItem('beta.channelLayout', state.channelLayout);
+    applyLayout();
+  });
+  $('channel-columns-select').addEventListener('change', (event) => {
+    state.channelColumns = Math.min(4, Math.max(2, Number(event.target.value) || 2));
+    localStorage.setItem('beta.channelColumns', String(state.channelColumns));
     applyLayout();
   });
 
@@ -916,6 +1035,12 @@ function init() {
         if (channelListOpen) closePlayerChannels(); else closePlayer();
         return;
       }
+      if (!channelListOpen && (event.key === 'ArrowLeft' || event.key === 'ArrowRight' ||
+          event.key === 'ArrowUp' || event.key === 'ArrowDown')) {
+        event.preventDefault();
+        changeDesktopChannel(event.key === 'ArrowLeft' || event.key === 'ArrowUp' ? -1 : 1);
+        return;
+      }
       if (event.key === 'c' || event.key === 'C' || event.key === 'l' || event.key === 'L') {
         togglePlayerChannels();
         return;
@@ -928,8 +1053,8 @@ function init() {
     if (!$('channels-view').classList.contains('hidden')) { showView('home'); }
   });
 
-  if (window.xapi && typeof window.xapi.version === 'function') {
-    window.xapi.version()
+  if (window.betaapi && typeof window.betaapi.version === 'function') {
+    window.betaapi.version()
       .then((version) => {
         if (version) state.appVersion = version;
         $('foot-version').textContent = 'beta desktop v' + state.appVersion;

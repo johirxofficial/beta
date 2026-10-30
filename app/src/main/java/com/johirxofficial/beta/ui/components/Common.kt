@@ -1,4 +1,4 @@
-package com.johirxofficial.x.ui.components
+package com.johirxofficial.beta.ui.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement

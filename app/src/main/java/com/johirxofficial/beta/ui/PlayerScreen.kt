@@ -1,4 +1,4 @@
-package com.johirxofficial.x.ui
+package com.johirxofficial.beta.ui
 
 import android.app.PictureInPictureParams
 import android.content.Context
@@ -94,10 +94,10 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.PlayerView
-import com.johirxofficial.x.data.Channel
-import com.johirxofficial.x.data.UrlUtils
-import com.johirxofficial.x.ui.theme.Accent
-import com.johirxofficial.x.ui.theme.SurfaceDark
+import com.johirxofficial.beta.data.Channel
+import com.johirxofficial.beta.data.UrlUtils
+import com.johirxofficial.beta.ui.theme.Accent
+import com.johirxofficial.beta.ui.theme.SurfaceDark
 import kotlinx.coroutines.delay
 import okhttp3.OkHttpClient
 import java.util.concurrent.TimeUnit
@@ -231,19 +231,6 @@ fun PlayerScreen(
         revealControls()
     }
 
-    val seekBy: (Long) -> Unit = { delta ->
-        val duration = runCatching { player.duration }.getOrDefault(0L)
-        val target = (runCatching { player.currentPosition }.getOrDefault(0L) + delta)
-            .coerceAtLeast(0L)
-        val limited = if (duration > 0L && duration != C.TIME_UNSET) {
-            target.coerceAtMost(duration)
-        } else {
-            target
-        }
-        runCatching { player.seekTo(limited) }
-        revealControls()
-    }
-
     val changeChannel: (Int) -> Unit = { step ->
         if (channels.isNotEmpty()) {
             val index = channels.indexOfFirst { it.url == channel.url }
@@ -373,12 +360,12 @@ fun PlayerScreen(
                     }
 
                     !controlsVisible && !showChannels && code == KEY_DPAD_LEFT -> {
-                        seekBy(-10_000)
+                        changeChannel(-1)
                         true
                     }
 
                     !controlsVisible && !showChannels && code == KEY_DPAD_RIGHT -> {
-                        seekBy(10_000)
+                        changeChannel(1)
                         true
                     }
 
@@ -522,8 +509,8 @@ fun PlayerScreen(
                             primary = true,
                             modifier = Modifier.focusRequester(playFocus),
                         )
-                        PlayerButton(text = "-10s", onClick = { seekBy(-10_000) })
-                        PlayerButton(text = "+10s", onClick = { seekBy(10_000) })
+                        PlayerButton(text = "Previous", onClick = { changeChannel(-1) })
+                        PlayerButton(text = "Next", onClick = { changeChannel(1) })
                         PlayerButton(
                             text = if (isMuted) "Sound" else "Mute",
                             onClick = toggleMute,
