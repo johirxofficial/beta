@@ -212,10 +212,9 @@ fun SettingsSheet(
                 )
             }
 
-            TextButton(
-                onClick = actions.openUpdateLink,
-                enabled = !update?.apkUrl.isNullOrBlank(),
-            ) { Text("Open download page") }
+            TextButton(onClick = actions.openUpdateLink) {
+                Text("Open download page")
+            }
 
             HorizontalDivider(Modifier.padding(vertical = 8.dp))
 

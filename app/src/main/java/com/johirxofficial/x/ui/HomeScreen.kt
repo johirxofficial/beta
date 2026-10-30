@@ -64,6 +64,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -112,6 +113,7 @@ fun HomeScreen(
     var showSettings by remember { mutableStateOf(false) }
     var errorDismissed by remember { mutableStateOf(false) }
     val snackbarHost = remember { SnackbarHostState() }
+    val uriHandler = LocalUriHandler.current
 
     LaunchedEffect(state.error) {
         errorDismissed = false
@@ -223,7 +225,7 @@ fun HomeScreen(
         )
     }
 
-    if (state.error != null && state.categories.isEmpty() && !state.loading && !errorDismissed) {
+    if (state.error != null && !state.loading && !errorDismissed) {
         AlertDialog(
             onDismissRequest = { },
             title = { Text("Source theke response asheni") },
@@ -240,7 +242,12 @@ fun HomeScreen(
                     TextButton(
                         onClick = {
                             errorDismissed = true
-                            showSettings = true
+                            if (state.update == null) {
+                                // Nothing loaded yet, so point at the release page directly.
+                                uriHandler.openUri("${BuildConfig.PROJECT_URL}/releases/latest")
+                            } else {
+                                showSettings = true
+                            }
                         },
                     ) { Text("App update") }
                     TextButton(onClick = onClose) { Text("Close") }

@@ -192,7 +192,7 @@ class MainViewModel(
     }
 
     fun openUpdateLink() {
-        val url = home.update?.apkUrl ?: return
+        val url = home.update?.apkUrl ?: "${BuildConfig.PROJECT_URL}/releases/latest"
         updateManager.openInBrowser(url)
     }
 
