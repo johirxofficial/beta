@@ -3,7 +3,6 @@ package com.johirxofficial.x.ui
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.border
@@ -64,7 +63,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -73,7 +71,6 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.johirxofficial.x.BuildConfig
-import com.johirxofficial.x.R
 import com.johirxofficial.x.data.Category
 import com.johirxofficial.x.data.Channel
 import com.johirxofficial.x.ui.components.ErrorState
@@ -132,12 +129,12 @@ fun HomeScreen(
                 title = {
                     Column {
                         Text(
-                            text = "X",
+                            text = "beta",
                             style = MaterialTheme.typography.headlineSmall,
                             fontWeight = FontWeight.Black,
                         )
                         Text(
-                            text = "Watch live from multiple servers.",
+                            text = "watch live",
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             maxLines = 1,
@@ -215,6 +212,8 @@ fun HomeScreen(
             apiUrl = state.apiUrl,
             autoPlay = state.autoPlay,
             showLogos = state.showLogos,
+            theme = state.theme,
+            gridColumns = state.gridColumns,
             update = state.update,
             updateAvailable = updateAvailable,
             updateState = updateState,
@@ -226,10 +225,10 @@ fun HomeScreen(
     if (state.error != null && !state.loading && !errorDismissed) {
         AlertDialog(
             onDismissRequest = { },
-            title = { Text("Source theke response asheni") },
+            title = { Text("Could not load the catalog") },
             text = {
                 Text(
-                    "${state.error}\n\nReload korun, notun version check korun, ba app bondho korun.",
+                    "${state.error}\n\nReload, check for an app update, or close the app.",
                 )
             },
             confirmButton = {
@@ -302,12 +301,10 @@ private fun HomeContent(
     onToggleFavorite: (Channel) -> Unit,
     onOpenSettings: () -> Unit,
 ) {
-    val totalChannels = remember(state.categories) {
-        state.categories.sumOf { it.channelCountHint ?: it.inlineChannels.size }
-    }
+    val columns = state.gridColumns.takeIf { it in 2..6 } ?: layout.columns
 
     LazyVerticalGrid(
-        columns = GridCells.Fixed(layout.columns),
+        columns = GridCells.Fixed(columns),
         contentPadding = PaddingValues(
             start = layout.padding.dp,
             end = layout.padding.dp,
@@ -318,14 +315,6 @@ private fun HomeContent(
         verticalArrangement = Arrangement.spacedBy(12.dp),
         modifier = Modifier.fillMaxSize(),
     ) {
-        item(span = { GridItemSpan(maxLineSpan) }) {
-            HeroCard(
-                categoryCount = state.categories.size,
-                channelCount = totalChannels,
-                apiHost = state.apiHost,
-            )
-        }
-
         if (state.favorites.isNotEmpty()) {
             item(span = { GridItemSpan(maxLineSpan) }) {
                 Column {
@@ -371,74 +360,6 @@ private fun HomeContent(
 
         item(span = { GridItemSpan(maxLineSpan) }) {
             Footer(apiHost = state.apiHost, onOpenSettings = onOpenSettings)
-        }
-    }
-}
-
-@Composable
-private fun HeroCard(categoryCount: Int, channelCount: Int, apiHost: String) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(24.dp))
-            .background(
-                Brush.linearGradient(
-                    listOf(Color(0xFF0B3C47), Color(0xFF0A1620), Color(0xFF070B10)),
-                ),
-            )
-            .border(1.dp, Accent.copy(alpha = 0.18f), RoundedCornerShape(24.dp))
-            .padding(18.dp),
-    ) {
-        Text(
-            text = "X",
-            fontSize = 96.sp,
-            fontWeight = FontWeight.Black,
-            color = Color.White.copy(alpha = 0.05f),
-            modifier = Modifier.align(Alignment.CenterEnd),
-        )
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Image(
-                painter = painterResource(R.drawable.app_logo),
-                contentDescription = "X logo",
-                contentScale = ContentScale.Crop,
-                modifier = Modifier
-                    .size(48.dp)
-                    .clip(RoundedCornerShape(12.dp)),
-            )
-            Spacer(Modifier.width(14.dp))
-            Column {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        text = "X",
-                        style = MaterialTheme.typography.headlineMedium,
-                        fontWeight = FontWeight.Black,
-                    )
-                    Spacer(Modifier.width(8.dp))
-                    Pill("LIVE")
-                }
-                Spacer(Modifier.height(4.dp))
-                Text(
-                    text = buildString {
-                        append(formatCount(categoryCount))
-                        append(" categories")
-                        if (channelCount > 0) {
-                            append(" · ")
-                            append(formatCount(channelCount))
-                            append(" channels")
-                        }
-                    },
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Spacer(Modifier.height(2.dp))
-                Text(
-                    text = if (apiHost.isBlank()) "Fresh from API · no cache" else "Fresh · $apiHost",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = Accent.copy(alpha = 0.85f),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
         }
     }
 }
@@ -498,7 +419,7 @@ private fun MiniChannelCard(
                     overflow = TextOverflow.Ellipsis,
                 )
                 Text(
-                    text = channel.quality ?: channel.group ?: "Live",
+                    text = channel.group ?: "Live TV",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
@@ -638,7 +559,7 @@ private fun Footer(apiHost: String, onOpenSettings: () -> Unit) {
         Spacer(Modifier.width(8.dp))
         Column(Modifier.weight(1f)) {
             Text(
-                text = "v${BuildConfig.VERSION_NAME} · ${BuildConfig.DEVELOPER}",
+                text = "beta v${BuildConfig.VERSION_NAME} · ${BuildConfig.DEVELOPER}",
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )

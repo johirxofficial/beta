@@ -1,8 +1,8 @@
 {
-  "name": "x-live-desktop",
-  "productName": "X live",
-  "version": "4.0.0",
-  "description": "Watch live from multiple servers",
+  "name": "beta-desktop",
+  "productName": "beta",
+  "version": "5.0.0",
+  "description": "beta — watch live",
   "author": "johirxofficial",
   "license": "MIT",
   "main": "main.js",
@@ -19,8 +19,8 @@
     "electron-builder": "^25.1.8"
   },
   "build": {
-    "appId": "com.johirxofficial.x.desktop",
-    "productName": "X live",
+    "appId": "com.johirxofficial.beta.desktop",
+    "productName": "beta",
     "directories": {
       "output": "release",
       "buildResources": "assets"
@@ -35,7 +35,7 @@
       "icon": "assets/icon.ico"
     },
     "portable": {
-      "artifactName": "X-live-${version}-portable.exe"
+      "artifactName": "beta-${version}-portable.exe"
     }
   }
 }

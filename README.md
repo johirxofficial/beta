@@ -1,4 +1,4 @@
-# X live — IPTV & playlist player
+# beta — watch live
 
 A fast, open source IPTV player for **Android, Android TV and Windows**. Every category,
 notice and channel comes from a single JSON API, so the whole catalog — and even the
@@ -7,38 +7,43 @@ update link — can change on your server without a new build.
 [![CI](https://github.com/johirxofficial/x/actions/workflows/build.yml/badge.svg)](https://github.com/johirxofficial/x/actions/workflows/build.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-**Version 4.0.0** · developer **johirxofficial** · Kotlin + Jetpack Compose + Media3 · Electron for Windows
+**Version 5.0.0** · developer **johirxofficial** · Kotlin + Jetpack Compose + Media3 · Electron for Windows
 
 ## Download
 
 | Platform | File |
 | --- | --- |
-| Android phone / tablet / TV | `X-v4.0.0.apk` from [Releases](https://github.com/johirxofficial/x/releases) |
-| Windows 10 / 11 (64-bit) | `X-live-4.0.0-portable.exe` from the same release |
+| Android phone / tablet / TV | `beta-v5.0.0.apk` from [Releases](https://github.com/johirxofficial/x/releases) |
+| Windows 10 / 11 (64-bit) | `beta-5.0.0-portable.exe` from the same release |
 
-The APK is also published as **`X-latest.apk`**, which always points at the newest release —
-that is the URL the in-app updater uses. On Windows just run the portable `.exe`; there is
-no installer.
+The APK is also published as **`beta-latest.apk`**, which always points at the newest
+release — that is the URL the in-app updater uses. `X-latest.apk` is kept as a
+compatibility copy for v4 installs that still poll the old URL. On Windows just run the
+portable `.exe`; there is no installer.
 
-## What's new in v4
+## What's new in v5
 
-- **Clean header** — only the app name **X** with the tagline *“Watch live from multiple
-  servers.”* The logo box is gone from the top bar.
-- **Notice ticker** — a capsule-shaped marquee under the header shows every string from
-  the JSON `notices` array, scrolling continuously.
-- **In-app update** — a new **Settings → App update** section reads the `update` block from
-  the JSON, shows the latest version and notes, downloads the new APK with a progress bar
-  and opens the Android package installer. If the installer is unavailable it falls back
-  to the browser.
-- **Friendly failure popup** — if the main source does not answer, a dialog offers
-  **Reload**, **App update** and **Close** instead of a dead screen.
-- **Windows app** — a native-feeling Electron client with the same catalog, ticker,
-  categories, search, favorites and HLS/MPEG-TS playback.
-- **TV-first navigation** — every card, chip, row and button has a visible D-pad focus
-  state, the settings sheet scrolls with the remote, and the player keeps the leanback
-  controls.
-- **One logo everywhere** — launcher icon (legacy + adaptive + round), TV banner, in-app
-  hero/About and the Windows exe all use the same asset.
+- **New name and logo** — **beta** with the tagline *watch live*. The launcher icon
+  (legacy, round and adaptive), TV banner, in-app branding and Windows exe all use the
+  new beta wordmark.
+- **Rebuilt player controls** — a custom Compose overlay replaces the stock controller.
+  It auto-hides after 4 seconds of playback, returns on any tap or key press, and works
+  with touch, mouse, D-pad and keyboard.
+- **Channel list inside the player** — press **Channels**, **Menu**, **C** or **L** (or
+  the remote's channel up/down keys to zap). Pick any channel without leaving playback.
+- **Rotation works** — the phone/tablet player requests full-sensor orientation, and the
+  overlay has a Landscape/Portrait toggle. TV layouts keep a fixed orientation.
+- **App layout settings** — choose **System / Dark / Light** theme and a **Home grid**
+  size (Auto, 2–6 columns). The Windows app has the same grid setting. Both are saved
+  between launches.
+- **Cleaner player** — no LIVE, VOD or `720p` badges over the video; quality tags are also
+  stripped from the player title.
+- **English-only UI** — every screen, dialog, player message, notice and JSON default is
+  English. The build ships only the `en` resource configuration.
+- **Home page cleanup** — the old info/hero card under the notice capsule is gone; the
+  page starts with favorites, recent channels and the category grid.
+- **Bug fixes and polish** — smoother category loading, English error dialogs, TV focus
+  rings preserved, and a shorter path from a failed stream to another channel.
 
 ## Features
 
@@ -52,14 +57,43 @@ no installer.
 - Instant search, group filter, favorites, recently watched
 - Notice marquee + remote-driven app update from the same JSON
 - API URL editable inside the app, plus a public demo catalog preset
-- Dark edge-to-edge Compose UI, adaptive 2–6 columns, focus rings for remotes
+- Adaptive 2–6 column home grid, dark/light/system theme, focus rings for remotes
+
+## Player controls
+
+### Android phone / tablet
+
+| Action | How |
+| --- | --- |
+| Show or hide controls | Tap the video; controls hide themselves after 4 seconds while playing |
+| Play / pause | On-screen button, Space, or the media play/pause key |
+| Seek ±10 seconds | `-10s` / `+10s`, or D-pad left/right while the controls are hidden |
+| Channel list | **Channels** button, **Menu**, **C** or **L** |
+| Previous / next channel | Remote channel up/down keys |
+| Rotate | **Landscape / Portrait** button, or rotate the device |
+| Mute | **Mute / Sound** |
+| Aspect ratio | **Fit → Zoom → Fill** |
+| Picture-in-picture | **PiP** (Android 8.0+, phones/tablets) |
+| Favorite | **Save / Saved** in the top bar |
+| Back | **Back** button or system Back (closes the channel list first) |
+
+### Android TV / Google TV
+
+The same overlay is fully D-pad driven: focus always has a white ring, the channel list
+opens with **Menu**, and playback keeps the leanback layout. Rotation and PiP buttons are
+hidden on TV.
+
+### Windows desktop
+
+Click the video to show the overlay. It hides after 3.5 seconds while playing. Press
+**C**, **L** or **Esc** to open the channel list, or use the **Channels** button.
 
 ## Supported devices
 
 | Device | Support |
 | --- | --- |
 | Phones (Android 5.0+) | ✅ |
-| Tablets & foldables | ✅ 3–5 columns |
+| Tablets & foldables | ✅ 2–6 columns |
 | Android TV / Google TV | ✅ leanback launcher + D-pad focus + banner |
 | Chromebooks / Android desktop windows | ✅ resizable, 2–6 columns |
 | Windows 10 / 11 (x64) | ✅ portable `.exe` |
@@ -74,9 +108,9 @@ There is **no cache system** in the Android app:
 - no in-memory category/playlist cache — reopening a category downloads it again
 
 If the server is unreachable the app shows the **Reload / App update / Close** dialog
-instead of stale data. The only things kept between launches are your own settings, API
-URL, favorites and watch history. The Windows app stores just the API URL and favorites
-in `localStorage`.
+instead of stale data. The only things kept between launches are your own settings (API
+URL, theme, grid, playback toggles), favorites and watch history. The Windows app stores
+the API URL, grid size and favorites in `localStorage`.
 
 Channel logos and category flags are loaded with the platform image loader, which keeps its
 normal image cache. That is image loading, not API data.
@@ -116,21 +150,21 @@ are accepted.
 
 ```json
 {
-  "app": "X",
+  "app": "beta",
   "developer": "johirxofficial",
-  "version": 4,
+  "version": 5,
   "stats": { "categories": 54, "channels": 16778 },
   "notices": [
-    "Welcome to X live — Watch live from multiple servers.",
-    "New version available in Settings → App update."
+    "beta 5.0.0 — watch live from multiple servers.",
+    "New: player controls, channel list shortcut and rotation."
   ],
   "update": {
-    "latest_version": "4.0.0",
-    "version_code": 4,
-    "apk_url": "https://github.com/johirxofficial/x/releases/latest/download/X-latest.apk",
+    "latest_version": "5.0.0",
+    "version_code": 5,
+    "apk_url": "https://github.com/johirxofficial/x/releases/latest/download/beta-latest.apk",
     "desktop_url": "https://github.com/johirxofficial/x/releases/latest",
-    "message": "Faster loading, notice ticker, TV remote support and the Windows app.",
-    "size_mb": 9.3
+    "message": "Redesigned player controls, layout settings and the new beta logo.",
+    "size_mb": 9.4
   },
   "categories": [
     {
@@ -185,7 +219,7 @@ category.
 | --- | --- | --- |
 | `notices` | `string[]` | Lines shown in the capsule marquee under the header. Also accepts objects with `text` / `message` |
 | `update` | `object` | App update metadata (see below) |
-| `update.latest_version` | `string` | Version shown in Settings, e.g. `"4.0.0"` |
+| `update.latest_version` | `string` | Version shown in Settings, e.g. `"5.0.0"` |
 | `update.version_code` | `int` | Android `versionCode` of the new APK — update is offered when it is higher |
 | `update.apk_url` | `string` | Direct APK download used by **Update now** |
 | `update.desktop_url` | `string` | Page opened by the Windows app for its own update |
@@ -254,41 +288,41 @@ Requirements: Node.js 20+.
 cd desktop
 npm install
 npm start        # run the app
-npm run dist     # release/X-live-4.0.0-portable.exe
+npm run dist     # release/beta-5.0.0-portable.exe
 ```
 
 CI runs the tests, builds both APKs and the Windows exe on every push; pushing a `v*` tag
-publishes the release APK (as `X-vX.Y.Z.apk` **and** `X-latest.apk`) together with the
-portable exe. Release builds are signed with the default debug key so they can be
-sideloaded — add your own keystore before publishing on a store.
+publishes `beta-vX.Y.Z.apk`, `beta-latest.apk`, the compatibility `X-latest.apk`, and
+`beta-<version>-portable.exe`. Release builds are signed with the default debug key so they
+can be sideloaded — add your own keystore before publishing on a store.
 
 ## Project layout
 
 ```
 app/src/main/java/com/johirxofficial/x/
-├── MainActivity.kt
-├── XApp.kt                    # Coil image loader
+├── MainActivity.kt            # theme-aware activity, edge-to-edge system bars
+├── BetaApp.kt                 # Coil image loader
 ├── data/
 │   ├── Models.kt              # Channel, Category, Catalog, AppUpdate
 │   ├── PlaylistJsonParser.kt  # tolerant JSON parsing + notices/update
 │   ├── M3uParser.kt           # M3U / M3U8 / Xtream parsing
 │   ├── Repository.kt          # network only — no cache
+│   ├── Settings.kt            # API URL, theme, grid, playback options
 │   ├── UpdateManager.kt       # APK download + package installer
-│   ├── Settings.kt            # API URL + playback options
 │   └── UserDataStore.kt       # favorites + history
 └── ui/
-    ├── AppRoot.kt             # navigation
-    ├── HomeScreen.kt          # header, notice ticker, hero, category grid
+    ├── AppRoot.kt             # navigation + player channel list
+    ├── HomeScreen.kt          # header, ticker, favorites, category grid
     ├── ChannelsScreen.kt      # search, groups, channel list
-    ├── PlayerScreen.kt        # Media3 player, PiP, aspect modes
-    ├── SettingsSheet.kt       # App update, API URL, toggles, about
-    └── components/            # shared composables
+    ├── PlayerScreen.kt        # custom controls, channel overlay, rotation, PiP
+    ├── SettingsSheet.kt       # layout, playback, update, API URL, about
+    └── theme/                 # dark + light BetaTheme
 
 desktop/                      # Electron app for Windows
 ├── main.js                   # window + CORS-free HTTP bridge
 ├── preload.js                # isolated IPC API
 ├── renderer/                 # index.html, styles.css, app.js
-└── assets/                   # same logo as the Android app
+└── assets/                   # beta icon.png + icon.ico
 ```
 
 `docs/api/categories.json` is the public demo catalog used by the **Public** preset. It is

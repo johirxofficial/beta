@@ -35,13 +35,35 @@ class Settings(context: Context) {
             prefs.edit().putBoolean(KEY_LOGOS, value).apply()
         }
 
+    /** "system", "dark" or "light". */
+    var theme: String
+        get() = prefs.getString(KEY_THEME, THEME_SYSTEM) ?: THEME_SYSTEM
+        set(value) {
+            val cleaned = if (value in THEMES) value else THEME_SYSTEM
+            prefs.edit().putString(KEY_THEME, cleaned).apply()
+        }
+
+    /** 0 = automatic columns, otherwise a fixed 2-6 column grid. */
+    var gridColumns: Int
+        get() = prefs.getInt(KEY_GRID_COLUMNS, 0).coerceIn(0, 6)
+        set(value) {
+            prefs.edit().putInt(KEY_GRID_COLUMNS, value.coerceIn(0, 6)).apply()
+        }
+
     fun resetApiUrl() {
         prefs.edit().remove(KEY_API_URL).apply()
     }
 
-    private companion object {
-        const val KEY_API_URL = "api_url"
-        const val KEY_AUTOPLAY = "autoplay"
-        const val KEY_LOGOS = "show_logos"
+    companion object {
+        const val THEME_SYSTEM = "system"
+        const val THEME_DARK = "dark"
+        const val THEME_LIGHT = "light"
+        val THEMES = setOf(THEME_SYSTEM, THEME_DARK, THEME_LIGHT)
+
+        private const val KEY_API_URL = "api_url"
+        private const val KEY_AUTOPLAY = "autoplay"
+        private const val KEY_LOGOS = "show_logos"
+        private const val KEY_THEME = "theme"
+        private const val KEY_GRID_COLUMNS = "grid_columns"
     }
 }

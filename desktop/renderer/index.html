@@ -3,14 +3,14 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>X live</title>
+  <title>beta</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
   <header class="topbar">
     <div class="brand">
-      <h1>X</h1>
-      <p>Watch live from multiple servers.</p>
+      <h1>beta</h1>
+      <p>watch live</p>
     </div>
     <div class="topbar-actions">
       <button id="btn-refresh" class="icon-btn" title="Reload catalog">&#8635;</button>
@@ -26,15 +26,6 @@
   </div>
 
   <main id="home-view" class="view">
-    <section class="hero">
-      <img class="hero-logo" src="../assets/icon.png" alt="X">
-      <div class="hero-text">
-        <div class="hero-title"><h2>X</h2><span class="live-pill">LIVE</span></div>
-        <p id="hero-stats" class="muted">Loading catalog&hellip;</p>
-        <p id="hero-host" class="accent small"></p>
-      </div>
-    </section>
-
     <section id="favorites-block" class="hidden">
       <div class="section-head"><h3>Favorites</h3><span id="favorites-count" class="muted small"></span></div>
       <div id="favorites-row" class="strip"></div>
@@ -70,12 +61,19 @@
         <h3 id="player-title"></h3>
         <p id="player-sub" class="muted small"></p>
       </div>
+      <button id="btn-player-channels" class="ghost" title="Channel list">Channels</button>
       <button id="btn-player-favorite" class="icon-btn" title="Favorite">&#9733;</button>
       <button id="btn-aspect" class="ghost" title="Aspect ratio">FIT</button>
     </div>
-    <div id="player-badges" class="player-badges"></div>
+    <div id="player-channels" class="player-channels hidden">
+      <div class="player-channels-head">
+        <h3>Channels</h3>
+        <button id="btn-player-channels-close" class="ghost">Close</button>
+      </div>
+      <div id="player-channel-list" class="player-channel-list"></div>
+    </div>
     <div id="player-error" class="player-error hidden">
-      <h4>Stream play hocche na</h4>
+      <h4>Stream unavailable</h4>
       <p id="player-error-text" class="muted small"></p>
       <button id="btn-player-retry" class="primary">Retry</button>
     </div>
@@ -87,6 +85,17 @@
       <button id="btn-settings-close" class="icon-btn" title="Close">&#10005;</button>
     </div>
     <div class="panel-body">
+      <h4>App layout</h4>
+      <label class="muted small" for="grid-select">Home grid columns</label>
+      <select id="grid-select" class="search">
+        <option value="0">Auto</option>
+        <option value="2">2</option>
+        <option value="3">3</option>
+        <option value="4">4</option>
+        <option value="5">5</option>
+        <option value="6">6</option>
+      </select>
+
       <h4>App update</h4>
       <div class="update-row">
         <span id="current-version" class="muted small"></span>
@@ -112,10 +121,10 @@
 
       <h4>About</h4>
       <div class="about-row">
-        <img src="../assets/icon.png" alt="X logo" class="about-logo">
+        <img src="../assets/icon.png" alt="beta logo" class="about-logo">
         <div>
-          <strong>X</strong>
-          <p class="muted small">Watch live from multiple servers.</p>
+          <strong>beta</strong>
+          <p class="muted small">watch live</p>
         </div>
       </div>
       <p class="muted small">Developer: johirxofficial &middot; MIT License &middot; Windows build</p>

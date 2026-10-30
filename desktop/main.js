@@ -73,7 +73,7 @@ function createWindow() {
     minWidth: 900,
     minHeight: 560,
     backgroundColor: '#070B10',
-    title: 'X live',
+    title: 'beta — watch live',
     icon: path.join(__dirname, 'assets', 'icon.png'),
     autoHideMenuBar: true,
     webPreferences: {

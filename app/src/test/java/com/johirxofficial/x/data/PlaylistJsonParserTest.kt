@@ -11,7 +11,7 @@ class PlaylistJsonParserTest {
     fun `shape A - categories with playlist urls`() {
         val json = """
             {
-              "app_name": "X",
+              "app_name": "beta",
               "categories": [
                 { "id": "indian", "name": "Indian", "playlist_url": "https://iptv-org.github.io/iptv/countries/in.m3u" },
                 { "id": "bangla", "name": "Bangla", "playlist_url": "https://iptv-org.github.io/iptv/countries/bd.m3u" }
@@ -94,7 +94,7 @@ class PlaylistJsonParserTest {
     fun `parses the live x api document`() {
         val json = """
             {
-              "app_name": "X",
+              "app_name": "beta",
               "updated": "2026-10-29",
               "categories": [
                 { "id": "indian", "name": "Indian", "logo": "https://github.io",

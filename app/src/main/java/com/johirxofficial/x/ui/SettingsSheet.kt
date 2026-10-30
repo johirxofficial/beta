@@ -1,6 +1,7 @@
 package com.johirxofficial.x.ui
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -16,6 +17,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -40,6 +42,7 @@ import androidx.compose.ui.unit.dp
 import com.johirxofficial.x.BuildConfig
 import com.johirxofficial.x.R
 import com.johirxofficial.x.data.AppUpdate
+import com.johirxofficial.x.data.Settings
 import com.johirxofficial.x.ui.theme.Accent
 
 data class SettingsActions(
@@ -47,6 +50,8 @@ data class SettingsActions(
     val resetApiUrl: () -> Unit,
     val setAutoPlay: (Boolean) -> Unit,
     val setShowLogos: (Boolean) -> Unit,
+    val setTheme: (String) -> Unit,
+    val setGridColumns: (Int) -> Unit,
     val reload: () -> Unit,
     val clearHistory: () -> Unit,
     val downloadUpdate: () -> Unit,
@@ -60,6 +65,8 @@ fun SettingsSheet(
     apiUrl: String,
     autoPlay: Boolean,
     showLogos: Boolean,
+    theme: String,
+    gridColumns: Int,
     update: AppUpdate?,
     updateAvailable: Boolean,
     updateState: UpdateUiState,
@@ -90,15 +97,70 @@ fun SettingsSheet(
                 fontWeight = FontWeight.Bold,
             )
 
+            Text(
+                text = "App layout",
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold,
+            )
+            Text(
+                text = "Theme",
+                style = MaterialTheme.typography.bodyMedium,
+            )
+            Row(
+                modifier = Modifier.horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                listOf(
+                    Settings.THEME_SYSTEM to "System",
+                    Settings.THEME_DARK to "Dark",
+                    Settings.THEME_LIGHT to "Light",
+                ).forEach { (value, label) ->
+                    FilterChip(
+                        selected = theme == value,
+                        onClick = { actions.setTheme(value) },
+                        label = { Text(label) },
+                    )
+                }
+            }
+            Text(
+                text = "Home grid",
+                style = MaterialTheme.typography.bodyMedium,
+            )
+            Row(
+                modifier = Modifier.horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                val options = listOf(0 to "Auto", 2 to "2", 3 to "3", 4 to "4", 5 to "5", 6 to "6")
+                options.forEach { (value, label) ->
+                    FilterChip(
+                        selected = gridColumns == value,
+                        onClick = { actions.setGridColumns(value) },
+                        label = { Text(label) },
+                    )
+                }
+            }
+            Text(
+                text = "Choose how many category cards appear in each row. Auto follows the screen size.",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+
+            HorizontalDivider(Modifier.padding(vertical = 8.dp))
+
+            Text(
+                text = "Playback",
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold,
+            )
             SettingSwitch(
                 title = "Auto play",
-                subtitle = "Channel khule songe songe play hobe",
+                subtitle = "Start playing as soon as a channel opens",
                 checked = autoPlay,
                 onCheckedChange = actions.setAutoPlay,
             )
             SettingSwitch(
                 title = "Channel logos",
-                subtitle = "Bondho korle list aro fast chole, data bache",
+                subtitle = "Turn off to load channel lists faster and use less data",
                 checked = showLogos,
                 onCheckedChange = actions.setShowLogos,
             )
@@ -158,7 +220,7 @@ fun SettingsSheet(
                         modifier = Modifier.fillMaxWidth(),
                     ) { Text("Install downloaded APK") }
                     Text(
-                        text = "Download shesh — install e chap diye notun version bosan.",
+                        text = "Download complete — tap Install to update the app.",
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -182,7 +244,7 @@ fun SettingsSheet(
 
                 update == null -> {
                     Text(
-                        text = "API te update info nei. Notun version ele ekhane asbe.",
+                        text = "No update information in the API yet. New versions will appear here.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -190,7 +252,7 @@ fun SettingsSheet(
 
                 else -> {
                     Text(
-                        text = "Apni latest version e achen.",
+                        text = "You are on the latest version.",
                         style = MaterialTheme.typography.bodySmall,
                         color = Accent,
                     )
@@ -224,7 +286,7 @@ fun SettingsSheet(
                 fontWeight = FontWeight.SemiBold,
             )
             Text(
-                text = "Category list ei URL theke ashe. Apnar nijer server er link bosate paren.",
+                text = "Categories and channels load from this URL. You can use your own server.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -260,7 +322,7 @@ fun SettingsSheet(
                 fontWeight = FontWeight.SemiBold,
             )
             Text(
-                text = "Kono cache nei — protibar API theke fresh data ashe.",
+                text = "No cache — every reload fetches fresh data from the API.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -282,19 +344,19 @@ fun SettingsSheet(
             ) {
                 Image(
                     painter = painterResource(R.drawable.app_logo),
-                    contentDescription = "X logo",
+                    contentDescription = "beta logo",
                     modifier = Modifier
                         .size(42.dp)
                         .clip(RoundedCornerShape(11.dp)),
                 )
                 Column {
                     Text(
-                        text = "X · v${BuildConfig.VERSION_NAME}",
+                        text = "beta · v${BuildConfig.VERSION_NAME}",
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.SemiBold,
                     )
                     Text(
-                        text = "Watch live from multiple servers.",
+                        text = "watch live",
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )

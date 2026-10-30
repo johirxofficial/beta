@@ -222,11 +222,11 @@ fun ChannelsScreen(
                 visible.isEmpty() -> {
                     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         EmptyState(
-                            title = if (state.query.isBlank()) "Kono channel nei" else "Kichu paoa jayni",
+                            title = if (state.query.isBlank()) "No channels found" else "No matches",
                             subtitle = if (state.query.isBlank()) {
-                                "Playlist ta khali ba server bondho"
+                                "The playlist is empty or the server is offline."
                             } else {
-                                "Onno naam diye khujun"
+                                "Try a different name or group."
                             },
                         )
                     }

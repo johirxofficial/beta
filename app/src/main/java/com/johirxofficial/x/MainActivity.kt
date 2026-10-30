@@ -7,13 +7,15 @@ import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.runtime.LaunchedEffect
 import com.johirxofficial.x.data.Repository
 import com.johirxofficial.x.data.Settings
 import com.johirxofficial.x.data.UpdateManager
 import com.johirxofficial.x.data.UserDataStore
 import com.johirxofficial.x.ui.AppRoot
 import com.johirxofficial.x.ui.MainViewModel
-import com.johirxofficial.x.ui.theme.XTheme
+import com.johirxofficial.x.ui.theme.BetaTheme
 
 class MainActivity : ComponentActivity() {
 
@@ -35,7 +37,28 @@ class MainActivity : ComponentActivity() {
         )
 
         setContent {
-            XTheme {
+            val darkTheme = when (viewModel.home.theme) {
+                Settings.THEME_DARK -> true
+                Settings.THEME_LIGHT -> false
+                else -> isSystemInDarkTheme()
+            }
+
+            LaunchedEffect(darkTheme) {
+                enableEdgeToEdge(
+                    statusBarStyle = if (darkTheme) {
+                        SystemBarStyle.dark(Color.TRANSPARENT)
+                    } else {
+                        SystemBarStyle.light(Color.TRANSPARENT, Color.TRANSPARENT)
+                    },
+                    navigationBarStyle = if (darkTheme) {
+                        SystemBarStyle.dark(Color.TRANSPARENT)
+                    } else {
+                        SystemBarStyle.light(Color.TRANSPARENT, Color.TRANSPARENT)
+                    },
+                )
+            }
+
+            BetaTheme(darkTheme = darkTheme) {
                 AppRoot(viewModel)
             }
         }

@@ -3,6 +3,7 @@ package com.johirxofficial.x.ui.theme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Typography
 import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
@@ -39,6 +40,29 @@ private val DarkColors = darkColorScheme(
     onError = Color(0xFF2A0B0B),
 )
 
+private val LightColors = lightColorScheme(
+    primary = Color(0xFF0E7490),
+    onPrimary = Color.White,
+    primaryContainer = Color(0xFFCFFAFE),
+    onPrimaryContainer = Color(0xFF083344),
+    secondary = Color(0xFF2563EB),
+    onSecondary = Color.White,
+    tertiary = Color(0xFFDB2777),
+    background = Color(0xFFF5F8FC),
+    onBackground = Color(0xFF0B1620),
+    surface = Color.White,
+    onSurface = Color(0xFF0B1620),
+    surfaceVariant = Color(0xFFE3E9F1),
+    onSurfaceVariant = Color(0xFF52616F),
+    surfaceContainer = Color(0xFFEDF2F8),
+    surfaceContainerHigh = Color(0xFFE7EDF5),
+    surfaceContainerHighest = Color(0xFFDDE5EE),
+    outline = Color(0xFFB7C4D2),
+    outlineVariant = Color(0xFFD6DFE9),
+    error = Color(0xFFB42318),
+    onError = Color.White,
+)
+
 private val AppTypography = Typography(
     headlineMedium = TextStyle(
         fontFamily = FontFamily.SansSerif,
@@ -69,9 +93,12 @@ private val AppTypography = Typography(
 )
 
 @Composable
-fun XTheme(content: @Composable () -> Unit) {
+fun BetaTheme(
+    darkTheme: Boolean = true,
+    content: @Composable () -> Unit,
+) {
     MaterialTheme(
-        colorScheme = DarkColors,
+        colorScheme = if (darkTheme) DarkColors else LightColors,
         typography = AppTypography,
         content = content,
     )

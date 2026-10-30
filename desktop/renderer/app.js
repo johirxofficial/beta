@@ -1,6 +1,6 @@
 'use strict';
 
-/* X live — Windows desktop client (Electron renderer). */
+/* beta — Windows desktop client (Electron renderer). */
 
 const DEFAULT_API = 'http://10.31.253.82/live/api/data.json';
 const PUBLIC_API = 'https://raw.githubusercontent.com/johirxofficial/x/main/docs/api/categories.json';
@@ -35,9 +35,10 @@ const state = {
   query: '',
   current: null,
   aspect: 0,
+  columns: Number(localStorage.getItem('x.columns') || '0') || 0,
   hls: null,
   mpegts: null,
-  appVersion: '4.0.0',
+  appVersion: '5.0.0',
 };
 
 /* ---------------------------------------------------------------- helpers */
@@ -88,6 +89,10 @@ function letter(name) {
 function qualityOf(name) {
   const match = /\((\d{3,4}p)\)/i.exec(String(name || ''));
   return match ? match[1] : null;
+}
+
+function displayName(name) {
+  return String(name || '').replace(/\s*\(\d{3,4}p\)/gi, '').trim() || String(name || '');
 }
 
 function formatCount(value) {
@@ -325,17 +330,21 @@ function renderTicker() {
   track.style.animationDuration = Math.max(24, Math.round(text.length * 0.36)) + 's';
 }
 
-function renderHero() {
-  let total = 0;
-  for (const category of state.categories) {
-    total += Number(category.count) || category.channels.length || 0;
-  }
-  const stats = state.categories.length + ' categories';
-  $('hero-stats').textContent = total > 0 ? stats + ' \u00b7 ' + formatCount(total) + ' channels' : stats;
+function renderFooter() {
   const host = hostOf(state.apiUrl);
-  $('hero-host').textContent = host ? 'Fresh \u00b7 ' + host + ' \u00b7 no cache' : 'Fresh from API \u00b7 no cache';
-  $('foot-version').textContent = 'X desktop v' + state.appVersion;
-  $('foot-host').textContent = host;
+  $('foot-version').textContent = 'beta desktop v' + state.appVersion;
+  $('foot-host').textContent = host ? host + ' \u00b7 no cache, always fresh' : 'Fresh from API \u00b7 no cache';
+}
+
+function applyLayout() {
+  const grid = $('category-grid');
+  if (state.columns >= 2 && state.columns <= 6) {
+    grid.style.gridTemplateColumns = 'repeat(' + state.columns + ', minmax(0, 1fr))';
+  } else {
+    grid.style.gridTemplateColumns = '';
+  }
+  const select = $('grid-select');
+  if (select) select.value = String(state.columns);
 }
 
 function renderCategories() {
@@ -369,6 +378,7 @@ function renderCategories() {
   });
 
   $('category-count').textContent = state.categories.length + ' total';
+  applyLayout();
 }
 
 function renderFavorites() {
@@ -388,7 +398,7 @@ function renderFavorites() {
         '<span class="letter">' + escapeHtml(letter(channel.name)) + '</span>' +
         '<span style="min-width:0">' +
         '<span class="name" style="display:block">' + escapeHtml(channel.name) + '</span>' +
-        '<span class="sub" style="display:block">' + escapeHtml(channel.group || channel.quality || 'Live') + '</span>' +
+        '<span class="sub" style="display:block">' + escapeHtml(channel.group || 'Live TV') + '</span>' +
         '</span></button>'
       );
     })
@@ -407,7 +417,7 @@ function channelRow(channel) {
   const logo = channel.logo
     ? '<img class="logo" src="' + escapeHtml(channel.logo) + '" alt="" loading="lazy" onerror="this.remove()">'
     : '<div class="letter">' + escapeHtml(letter(channel.name)) + '</div>';
-  const sub = [channel.group, channel.quality].filter(Boolean).join(' \u00b7 ') || 'Live';
+  const sub = channel.group || 'Live TV';
   return (
     '<button class="channel" data-url="' + escapeHtml(channel.url) + '">' +
     logo +
@@ -498,8 +508,7 @@ function renderChannelList() {
 
 async function loadCatalog() {
   hideConnectionDialog();
-  $('hero-stats').textContent = 'Loading catalog\u2026';
-  $('hero-host').textContent = '';
+  $('category-count').textContent = 'Loading\u2026';
   $('category-grid').innerHTML = '';
 
   try {
@@ -512,14 +521,13 @@ async function loadCatalog() {
     state.update = catalog.update;
 
     renderTicker();
-    renderHero();
+    renderFooter();
     renderCategories();
     renderFavorites();
     renderSettings();
   } catch (error) {
     const message = messageFor(error);
-    $('hero-stats').textContent = 'Could not load the catalog';
-    $('hero-host').textContent = message;
+    $('category-count').textContent = 'Unavailable';
     showConnectionDialog(message);
   }
 }
@@ -661,15 +669,14 @@ function playChannel(channel) {
   if (!channel) return;
   state.current = channel;
   state.aspect = 0;
-  $('player-title').textContent = channel.name;
-  $('player-sub').textContent = [channel.group, channel.quality].filter(Boolean).join(' \u00b7 ') || hostOf(channel.url);
-  const badges = ['<span class="badge">' + (channel.quality || 'LIVE') + '</span>'];
-  if (channel.group) badges.push('<span class="badge">' + escapeHtml(channel.group) + '</span>');
-  $('player-badges').innerHTML = badges.join('');
+  $('player-title').textContent = displayName(channel.name);
+  $('player-sub').textContent = channel.group || hostOf(channel.url);
   $('player-error').classList.add('hidden');
+  closePlayerChannels();
   applyAspect();
   updatePlayerFavorite();
   showView('player');
+  showPlayerControls();
   startPlayback(channel);
 }
 
@@ -685,10 +692,81 @@ function applyAspect() {
   $('btn-aspect').textContent = ASPECT_LABELS[state.aspect];
 }
 
+let playerControlsTimer = null;
+
+function showPlayerControls() {
+  const player = $('player-view');
+  player.classList.remove('controls-hidden');
+  if (playerControlsTimer) clearTimeout(playerControlsTimer);
+  playerControlsTimer = setTimeout(() => {
+    if (!player.classList.contains('hidden') && !$('video').paused) {
+      player.classList.add('controls-hidden');
+    }
+  }, 3500);
+}
+
 function closePlayer() {
   destroyPlayers();
   state.current = null;
+  if (playerControlsTimer) clearTimeout(playerControlsTimer);
+  $('player-view').classList.remove('controls-hidden');
+  closePlayerChannels();
   showView(state.category ? 'channels' : 'home');
+}
+
+function playerChannelSource() {
+  if (state.category) return state.channels;
+  const list = state.favorites.slice();
+  if (state.current && !list.some((item) => item.url === state.current.url)) {
+    list.unshift(state.current);
+  }
+  return list;
+}
+
+function renderPlayerChannels() {
+  const list = playerChannelSource();
+  const container = $('player-channel-list');
+  container.innerHTML = list.length
+    ? list
+        .map((channel) => {
+          const current = state.current && channel.url === state.current.url;
+          return (
+            '<button class="player-channel' + (current ? ' current' : '') + '" data-url="' +
+            escapeHtml(channel.url) + '">' +
+            '<span class="name">' + escapeHtml(displayName(channel.name)) + '</span>' +
+            '<span class="sub">' + escapeHtml(channel.group || 'Channel') + '</span>' +
+            (current ? '<span class="playing">Playing</span>' : '') +
+            '</button>'
+          );
+        })
+        .join('')
+    : '<p class="muted small">No channels in this list.</p>';
+
+  container.querySelectorAll('.player-channel').forEach((button) => {
+    button.addEventListener('click', () => {
+      const channel = list.find((item) => item.url === button.dataset.url);
+      closePlayerChannels();
+      if (channel) playChannel(channel);
+    });
+  });
+}
+
+function openPlayerChannels() {
+  renderPlayerChannels();
+  $('player-channels').classList.remove('hidden');
+  showPlayerControls();
+}
+
+function closePlayerChannels() {
+  $('player-channels').classList.add('hidden');
+}
+
+function togglePlayerChannels() {
+  if ($('player-channels').classList.contains('hidden')) {
+    openPlayerChannels();
+  } else {
+    closePlayerChannels();
+  }
 }
 
 /* ---------------------------------------------------------------- settings */
@@ -705,6 +783,7 @@ function renderSettings() {
     ? 'A newer version is available for Windows.'
     : 'You are on the latest version.';
   $('api-input').value = state.apiUrl;
+  $('grid-select').value = String(state.columns);
   $('settings-error').textContent = '';
 }
 
@@ -756,6 +835,7 @@ function showView(name) {
   $('home-view').classList.toggle('hidden', name !== 'home');
   $('channels-view').classList.toggle('hidden', name !== 'channels');
   $('player-view').classList.toggle('hidden', name !== 'player');
+  if (name !== 'player') closePlayerChannels();
   if (name !== 'home') closeSettings();
 }
 
@@ -793,6 +873,8 @@ function init() {
   });
 
   $('btn-player-back').addEventListener('click', closePlayer);
+  $('btn-player-channels').addEventListener('click', togglePlayerChannels);
+  $('btn-player-channels-close').addEventListener('click', closePlayerChannels);
   $('btn-player-retry').addEventListener('click', () => {
     if (state.current) startPlayback(state.current);
   });
@@ -802,6 +884,18 @@ function init() {
   });
   $('btn-player-favorite').addEventListener('click', () => {
     if (state.current) toggleFavorite(state.current);
+  });
+
+  $('grid-select').addEventListener('change', (event) => {
+    state.columns = Number(event.target.value) || 0;
+    localStorage.setItem('x.columns', String(state.columns));
+    applyLayout();
+  });
+
+  $('video').addEventListener('play', showPlayerControls);
+  $('video').addEventListener('pause', showPlayerControls);
+  document.addEventListener('mousemove', () => {
+    if (!$('player-view').classList.contains('hidden')) showPlayerControls();
   });
 
   $('btn-dialog-reload').addEventListener('click', () => {
@@ -815,9 +909,21 @@ function init() {
   $('btn-dialog-close').addEventListener('click', () => window.close());
 
   document.addEventListener('keydown', (event) => {
+    const playerOpen = !$('player-view').classList.contains('hidden');
+    if (playerOpen) {
+      const channelListOpen = !$('player-channels').classList.contains('hidden');
+      if (event.key === 'Escape') {
+        if (channelListOpen) closePlayerChannels(); else closePlayer();
+        return;
+      }
+      if (event.key === 'c' || event.key === 'C' || event.key === 'l' || event.key === 'L') {
+        togglePlayerChannels();
+        return;
+      }
+      showPlayerControls();
+    }
     if (event.key !== 'Escape') return;
     if (!$('dialog').classList.contains('hidden')) { hideConnectionDialog(); return; }
-    if (!$('player-view').classList.contains('hidden')) { closePlayer(); return; }
     if (!$('settings-panel').classList.contains('hidden')) { closeSettings(); return; }
     if (!$('channels-view').classList.contains('hidden')) { showView('home'); }
   });
@@ -826,7 +932,7 @@ function init() {
     window.xapi.version()
       .then((version) => {
         if (version) state.appVersion = version;
-        $('foot-version').textContent = 'X desktop v' + state.appVersion;
+        $('foot-version').textContent = 'beta desktop v' + state.appVersion;
         renderSettings();
       })
       .catch(() => { /* keep the default version */ });

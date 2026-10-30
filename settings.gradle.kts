@@ -20,5 +20,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "X"
+rootProject.name = "beta"
 include(":app")

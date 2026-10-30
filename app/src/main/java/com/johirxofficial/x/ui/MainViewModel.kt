@@ -33,6 +33,8 @@ data class HomeUiState(
     val apiHost: String = "",
     val autoPlay: Boolean = true,
     val showLogos: Boolean = true,
+    val theme: String = Settings.THEME_SYSTEM,
+    val gridColumns: Int = 0,
     val message: String? = null,
     val notices: List<String> = emptyList(),
     val update: AppUpdate? = null,
@@ -68,6 +70,8 @@ class MainViewModel(
             apiHost = UrlUtils.hostOf(settings.apiUrl),
             autoPlay = settings.autoPlay,
             showLogos = settings.showLogos,
+            theme = settings.theme,
+            gridColumns = settings.gridColumns,
             favorites = userData.favorites(),
             recent = userData.recent(),
         ),
@@ -126,7 +130,7 @@ class MainViewModel(
         val added = favorites.any { it.url == channel.url }
         home = home.copy(
             favorites = favorites,
-            message = if (added) "${channel.name} — favorite e add holo" else "Favorite theke bad golo",
+            message = if (added) "${channel.name} added to favorites" else "${channel.name} removed from favorites",
         )
     }
 
@@ -151,8 +155,18 @@ class MainViewModel(
         home = home.copy(showLogos = enabled)
     }
 
+    fun setTheme(theme: String) {
+        settings.theme = theme
+        home = home.copy(theme = settings.theme)
+    }
+
+    fun setGridColumns(columns: Int) {
+        settings.gridColumns = columns
+        home = home.copy(gridColumns = settings.gridColumns)
+    }
+
     fun clearHistory() {
-        home = home.copy(recent = userData.clearHistory(), message = "History clear hoye gese")
+        home = home.copy(recent = userData.clearHistory(), message = "Watch history cleared")
     }
 
     fun consumeMessage() {
@@ -162,7 +176,7 @@ class MainViewModel(
     fun downloadUpdate() {
         val update = home.update ?: return
         val apkUrl = update.apkUrl ?: run {
-            updateState = UpdateUiState(error = "Update link nei — API te apk_url add korun.")
+            updateState = UpdateUiState(error = "No update link yet — add apk_url to the API.")
             return
         }
         if (updateState.downloading) return
@@ -187,7 +201,7 @@ class MainViewModel(
         val file = updateState.file ?: return
         val started = updateManager.install(file, home.update?.apkUrl)
         updateState = updateState.copy(
-            message = if (started) null else "Installer khule ni — browser theke download korun.",
+            message = if (started) null else "Could not open the installer — download the APK in a browser.",
         )
     }
 
@@ -284,8 +298,8 @@ class MainViewModel(
 }
 
 private fun Throwable.readableMessage(): String = when (this) {
-    is UnknownHostException -> "Server paoa jayni — internet ba API URL check korun."
-    is SocketTimeoutException -> "Server response dite deri korche — abar try korun."
+    is UnknownHostException -> "Server not found — check your internet connection or the API URL."
+    is SocketTimeoutException -> "The server took too long to respond — please try again."
     is IOException -> message ?: "Network problem"
     else -> message ?: this::class.java.simpleName
 }

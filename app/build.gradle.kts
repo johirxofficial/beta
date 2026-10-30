@@ -12,8 +12,8 @@ android {
         applicationId = "com.johirxofficial.x"
         minSdk = 21
         targetSdk = 35
-        versionCode = 4
-        versionName = "4.0.0"
+        versionCode = 5
+        versionName = "5.0.0"
 
         buildConfigField("String", "DEVELOPER", "\"johirxofficial\"")
         buildConfigField("String", "PROJECT_URL", "\"https://github.com/johirxofficial/x\"")
@@ -31,7 +31,7 @@ android {
             "\"https://raw.githubusercontent.com/johirxofficial/x/main/docs/api/categories.json\"",
         )
 
-        resourceConfigurations += listOf("en", "bn")
+        resourceConfigurations += listOf("en")
 
         vectorDrawables { useSupportLibrary = true }
     }

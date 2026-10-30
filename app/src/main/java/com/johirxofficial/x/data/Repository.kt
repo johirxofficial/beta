@@ -38,7 +38,7 @@ class Repository(@Suppress("UNUSED_PARAMETER") context: Context) {
         if (category.inlineChannels.isNotEmpty()) return@withContext category.inlineChannels
 
         val playlistUrl = category.playlistUrl
-            ?: throw IOException("Ei category te playlist nei")
+            ?: throw IOException("This category has no playlist URL")
 
         val body = fetch(playlistUrl)
         val channels = if (looksLikePlaylist(body)) {
@@ -48,7 +48,7 @@ class Repository(@Suppress("UNUSED_PARAMETER") context: Context) {
         }
 
         if (channels.isEmpty()) {
-            throw IOException("Ei category te channel paoa jayni")
+            throw IOException("No playable channels found in this category")
         }
         channels
     }

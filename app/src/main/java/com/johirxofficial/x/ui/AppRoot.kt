@@ -2,6 +2,7 @@ package com.johirxofficial.x.ui
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -25,6 +26,8 @@ fun AppRoot(viewModel: MainViewModel) {
         resetApiUrl = viewModel::resetApiUrl,
         setAutoPlay = viewModel::setAutoPlay,
         setShowLogos = viewModel::setShowLogos,
+        setTheme = viewModel::setTheme,
+        setGridColumns = viewModel::setGridColumns,
         reload = {
             navController.popBackStack(Routes.HOME, inclusive = false)
             viewModel.refresh()
@@ -82,10 +85,22 @@ fun AppRoot(viewModel: MainViewModel) {
             if (channel == null) {
                 LaunchedEffect(Unit) { navController.popBackStack() }
             } else {
+                val currentList = viewModel.channels.channels
+                val channelList = remember(currentList, channel, viewModel.home.favorites, viewModel.home.recent) {
+                    if (currentList.any { it.url == channel.url }) {
+                        currentList
+                    } else {
+                        (listOf(channel) + viewModel.home.favorites + viewModel.home.recent)
+                            .distinctBy { it.url }
+                    }
+                }
                 PlayerScreen(
                     channel = channel,
+                    channels = channelList,
                     autoPlay = viewModel.home.autoPlay,
                     isFavorite = viewModel.home.favorites.any { it.url == channel.url },
+                    allowRotation = !layout.isTv,
+                    onSelectChannel = viewModel::play,
                     onToggleFavorite = { viewModel.toggleFavorite(channel) },
                     onBack = { navController.popBackStack() },
                 )

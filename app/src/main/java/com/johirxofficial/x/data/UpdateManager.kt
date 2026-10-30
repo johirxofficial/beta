@@ -30,7 +30,7 @@ class UpdateManager(private val context: Context) {
         withContext(Dispatchers.IO) {
             val dir = File(context.cacheDir, "updates").apply { mkdirs() }
             dir.listFiles()?.forEach { it.delete() }
-            val target = File(dir, "X-update.apk")
+            val target = File(dir, "beta-update.apk")
 
             val request = Request.Builder()
                 .url(apkUrl)
