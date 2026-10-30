@@ -9,6 +9,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import com.johirxofficial.x.data.Repository
 import com.johirxofficial.x.data.Settings
+import com.johirxofficial.x.data.UpdateManager
 import com.johirxofficial.x.data.UserDataStore
 import com.johirxofficial.x.ui.AppRoot
 import com.johirxofficial.x.ui.MainViewModel
@@ -21,6 +22,7 @@ class MainActivity : ComponentActivity() {
             repository = Repository(applicationContext),
             settings = Settings(applicationContext),
             userData = UserDataStore(applicationContext),
+            updateManager = UpdateManager(applicationContext),
         )
     }
 

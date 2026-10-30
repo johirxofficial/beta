@@ -23,3 +23,8 @@ captures/
 # Keystore
 *.jks
 *.keystore
+
+# Windows desktop app
+desktop/node_modules/
+desktop/release/
+desktop/dist/

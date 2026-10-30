@@ -1,4 +1,4 @@
-plugins {
+﻿plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
@@ -12,8 +12,8 @@ android {
         applicationId = "com.johirxofficial.x"
         minSdk = 21
         targetSdk = 35
-        versionCode = 3
-        versionName = "3.0.0"
+        versionCode = 4
+        versionName = "4.0.0"
 
         buildConfigField("String", "DEVELOPER", "\"johirxofficial\"")
         buildConfigField("String", "PROJECT_URL", "\"https://github.com/johirxofficial/x\"")

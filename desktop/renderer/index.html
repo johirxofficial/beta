@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>X live</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <h1>X</h1>
+      <p>Watch live from multiple servers.</p>
+    </div>
+    <div class="topbar-actions">
+      <button id="btn-refresh" class="icon-btn" title="Reload catalog">&#8635;</button>
+      <button id="btn-settings" class="icon-btn" title="Settings">&#9881;</button>
+    </div>
+  </header>
+
+  <div id="ticker" class="ticker hidden">
+    <span class="ticker-dot"></span>
+    <div class="ticker-window">
+      <div id="ticker-track" class="ticker-track"></div>
+    </div>
+  </div>
+
+  <main id="home-view" class="view">
+    <section class="hero">
+      <img class="hero-logo" src="../assets/icon.png" alt="X">
+      <div class="hero-text">
+        <div class="hero-title"><h2>X</h2><span class="live-pill">LIVE</span></div>
+        <p id="hero-stats" class="muted">Loading catalog&hellip;</p>
+        <p id="hero-host" class="accent small"></p>
+      </div>
+    </section>
+
+    <section id="favorites-block" class="hidden">
+      <div class="section-head"><h3>Favorites</h3><span id="favorites-count" class="muted small"></span></div>
+      <div id="favorites-row" class="strip"></div>
+    </section>
+
+    <div class="section-head"><h3>Categories</h3><span id="category-count" class="muted small"></span></div>
+    <div id="category-grid" class="grid"></div>
+    <footer class="foot">
+      <span id="foot-version" class="muted small"></span>
+      <span id="foot-host" class="muted small"></span>
+    </footer>
+  </main>
+
+  <main id="channels-view" class="view hidden">
+    <div class="channels-head">
+      <button id="btn-back" class="icon-btn" title="Back">&#8592;</button>
+      <div class="channels-titles">
+        <h2 id="channels-title">Channels</h2>
+        <p id="channels-meta" class="muted small"></p>
+      </div>
+      <button id="btn-channels-refresh" class="icon-btn" title="Reload playlist">&#8635;</button>
+    </div>
+    <input id="search" class="search" type="search" placeholder="Search channel or group">
+    <div id="groups" class="chips"></div>
+    <div id="channel-list" class="channel-list"></div>
+  </main>
+
+  <section id="player-view" class="player hidden">
+    <video id="video" playsinline controls></video>
+    <div class="player-top">
+      <button id="btn-player-back" class="icon-btn" title="Back">&#8592;</button>
+      <div class="player-titles">
+        <h3 id="player-title"></h3>
+        <p id="player-sub" class="muted small"></p>
+      </div>
+      <button id="btn-player-favorite" class="icon-btn" title="Favorite">&#9733;</button>
+      <button id="btn-aspect" class="ghost" title="Aspect ratio">FIT</button>
+    </div>
+    <div id="player-badges" class="player-badges"></div>
+    <div id="player-error" class="player-error hidden">
+      <h4>Stream play hocche na</h4>
+      <p id="player-error-text" class="muted small"></p>
+      <button id="btn-player-retry" class="primary">Retry</button>
+    </div>
+  </section>
+
+  <aside id="settings-panel" class="panel hidden">
+    <div class="panel-head">
+      <h2>Settings</h2>
+      <button id="btn-settings-close" class="icon-btn" title="Close">&#10005;</button>
+    </div>
+    <div class="panel-body">
+      <h4>App update</h4>
+      <div class="update-row">
+        <span id="current-version" class="muted small"></span>
+        <span id="latest-version" class="accent small"></span>
+      </div>
+      <p id="update-note" class="muted small"></p>
+      <button id="btn-update" class="primary full">Download update</button>
+      <p id="update-status" class="muted small"></p>
+
+      <h4>JSON API</h4>
+      <p class="muted small">Categories come from this URL. No cache &mdash; every reload is fresh.</p>
+      <input id="api-input" class="search" type="url" spellcheck="false">
+      <div class="row">
+        <button id="btn-save-api" class="primary">Save</button>
+        <button id="btn-my-server" class="ghost">My server</button>
+        <button id="btn-public" class="ghost">Public</button>
+      </div>
+      <button id="btn-reload-now" class="ghost full">Reload now</button>
+      <p id="settings-error" class="error-text"></p>
+
+      <h4>Storage</h4>
+      <p class="muted small">No cache system. Favorites and the API URL are stored locally on this PC.</p>
+
+      <h4>About</h4>
+      <div class="about-row">
+        <img src="../assets/icon.png" alt="X logo" class="about-logo">
+        <div>
+          <strong>X</strong>
+          <p class="muted small">Watch live from multiple servers.</p>
+        </div>
+      </div>
+      <p class="muted small">Developer: johirxofficial &middot; MIT License &middot; Windows build</p>
+      <button id="btn-project" class="ghost full">github.com/johirxofficial/x</button>
+      <div class="spacer"></div>
+    </div>
+  </aside>
+
+  <div id="dialog" class="dialog-backdrop hidden">
+    <div class="dialog">
+      <h3 id="dialog-title">Connection problem</h3>
+      <p id="dialog-text" class="muted"></p>
+      <div class="dialog-actions">
+        <button id="btn-dialog-reload" class="primary">Reload</button>
+        <button id="btn-dialog-update" class="ghost">App update</button>
+        <button id="btn-dialog-close" class="ghost">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="../node_modules/hls.js/dist/hls.min.js"></script>
+  <script src="../node_modules/mpegts.js/dist/mpegts.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

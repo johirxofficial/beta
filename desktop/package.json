@@ -1,0 +1,41 @@
+{
+  "name": "x-live-desktop",
+  "productName": "X live",
+  "version": "4.0.0",
+  "description": "Watch live from multiple servers",
+  "author": "johirxofficial",
+  "license": "MIT",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win portable --x64"
+  },
+  "dependencies": {
+    "hls.js": "^1.5.17",
+    "mpegts.js": "^1.7.3"
+  },
+  "devDependencies": {
+    "electron": "^33.2.0",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "com.johirxofficial.x.desktop",
+    "productName": "X live",
+    "directories": {
+      "output": "release",
+      "buildResources": "assets"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "portable",
+          "arch": ["x64"]
+        }
+      ],
+      "icon": "assets/icon.ico"
+    },
+    "portable": {
+      "artifactName": "X-live-${version}-portable.exe"
+    }
+  }
+}

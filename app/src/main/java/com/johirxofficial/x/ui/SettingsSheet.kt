@@ -1,5 +1,6 @@
 package com.johirxofficial.x.ui
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -8,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -15,6 +17,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
@@ -29,10 +32,15 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.johirxofficial.x.BuildConfig
+import com.johirxofficial.x.R
+import com.johirxofficial.x.data.AppUpdate
+import com.johirxofficial.x.ui.theme.Accent
 
 data class SettingsActions(
     val saveApiUrl: (String) -> Unit,
@@ -41,6 +49,9 @@ data class SettingsActions(
     val setShowLogos: (Boolean) -> Unit,
     val reload: () -> Unit,
     val clearHistory: () -> Unit,
+    val downloadUpdate: () -> Unit,
+    val installUpdate: () -> Unit,
+    val openUpdateLink: () -> Unit,
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -49,6 +60,9 @@ fun SettingsSheet(
     apiUrl: String,
     autoPlay: Boolean,
     showLogos: Boolean,
+    update: AppUpdate?,
+    updateAvailable: Boolean,
+    updateState: UpdateUiState,
     onDismiss: () -> Unit,
     actions: SettingsActions,
 ) {
@@ -88,6 +102,120 @@ fun SettingsSheet(
                 checked = showLogos,
                 onCheckedChange = actions.setShowLogos,
             )
+
+            HorizontalDivider(Modifier.padding(vertical = 8.dp))
+
+            Text(
+                text = "App update",
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold,
+            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                Text(
+                    text = "Current v${BuildConfig.VERSION_NAME}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                val latest = update?.latestVersion
+                if (!latest.isNullOrBlank()) {
+                    Text(
+                        text = "Latest $latest",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = if (updateAvailable) Accent else MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                }
+            }
+
+            val updateNote = update?.message
+            if (!updateNote.isNullOrBlank()) {
+                Text(
+                    text = updateNote,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+
+            when {
+                updateState.downloading -> {
+                    LinearProgressIndicator(
+                        progress = { updateState.progress },
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    Text(
+                        text = "Downloading ${(updateState.progress * 100).toInt()}%",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+
+                updateState.file != null -> {
+                    Button(
+                        onClick = actions.installUpdate,
+                        modifier = Modifier.fillMaxWidth(),
+                    ) { Text("Install downloaded APK") }
+                    Text(
+                        text = "Download shesh — install e chap diye notun version bosan.",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+
+                updateAvailable -> {
+                    Button(
+                        onClick = actions.downloadUpdate,
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = !update?.apkUrl.isNullOrBlank(),
+                    ) { Text("Update now") }
+                    val size = update?.sizeMb
+                    if (size != null) {
+                        Text(
+                            text = "APK size: $size MB",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+
+                update == null -> {
+                    Text(
+                        text = "API te update info nei. Notun version ele ekhane asbe.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+
+                else -> {
+                    Text(
+                        text = "Apni latest version e achen.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Accent,
+                    )
+                }
+            }
+
+            updateState.error?.let { message ->
+                Text(
+                    text = message,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error,
+                )
+            }
+            updateState.message?.let { message ->
+                Text(
+                    text = message,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+
+            TextButton(
+                onClick = actions.openUpdateLink,
+                enabled = !update?.apkUrl.isNullOrBlank(),
+            ) { Text("Open download page") }
 
             HorizontalDivider(Modifier.padding(vertical = 8.dp))
 
@@ -149,10 +277,30 @@ fun SettingsSheet(
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.SemiBold,
             )
-            Text(
-                text = "X live · v${BuildConfig.VERSION_NAME}",
-                style = MaterialTheme.typography.bodyMedium,
-            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                Image(
+                    painter = painterResource(R.drawable.app_logo),
+                    contentDescription = "X logo",
+                    modifier = Modifier
+                        .size(42.dp)
+                        .clip(RoundedCornerShape(11.dp)),
+                )
+                Column {
+                    Text(
+                        text = "X · v${BuildConfig.VERSION_NAME}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                    Text(
+                        text = "Watch live from multiple servers.",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
             Text(
                 text = "Developer: ${BuildConfig.DEVELOPER}",
                 style = MaterialTheme.typography.bodySmall,

@@ -1,7 +1,10 @@
 package com.johirxofficial.x.ui
 
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.border
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
@@ -24,11 +27,13 @@ import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.lazy.itemsIndexed as rowItemsIndexed
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -58,6 +63,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -66,6 +72,7 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.johirxofficial.x.BuildConfig
+import com.johirxofficial.x.R
 import com.johirxofficial.x.data.Category
 import com.johirxofficial.x.data.Channel
 import com.johirxofficial.x.ui.components.ErrorState
@@ -90,8 +97,11 @@ private val CategoryGradients = listOf(
 fun HomeScreen(
     state: HomeUiState,
     layout: LayoutInfo,
+    updateAvailable: Boolean,
+    updateState: UpdateUiState,
     onRefresh: () -> Unit,
     onRetry: () -> Unit,
+    onClose: () -> Unit,
     onOpenCategory: (Category) -> Unit,
     onPlayChannel: (Channel) -> Unit,
     onToggleFavorite: (Channel) -> Unit,
@@ -99,7 +109,12 @@ fun HomeScreen(
     settingsActions: SettingsActions,
 ) {
     var showSettings by remember { mutableStateOf(false) }
+    var errorDismissed by remember { mutableStateOf(false) }
     val snackbarHost = remember { SnackbarHostState() }
+
+    LaunchedEffect(state.error) {
+        errorDismissed = false
+    }
 
     LaunchedEffect(state.message) {
         val message = state.message
@@ -114,29 +129,39 @@ fun HomeScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        BrandMark(size = 30.dp)
-                        Spacer(Modifier.width(10.dp))
-                        Column {
-                            Text(
-                                text = "X",
-                                style = MaterialTheme.typography.titleLarge,
-                                fontWeight = FontWeight.Black,
-                            )
-                            Text(
-                                text = "live · open source",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
+                    Column {
+                        Text(
+                            text = "X",
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.Black,
+                        )
+                        Text(
+                            text = "Watch live from multiple servers.",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
                     }
                 },
                 actions = {
                     IconButton(onClick = onRefresh) {
                         Icon(Icons.Default.Refresh, contentDescription = "Refresh")
                     }
-                    IconButton(onClick = { showSettings = true }) {
-                        Icon(Icons.Default.Settings, contentDescription = "Settings")
+                    Box {
+                        IconButton(onClick = { showSettings = true }) {
+                            Icon(Icons.Default.Settings, contentDescription = "Settings")
+                        }
+                        if (updateAvailable) {
+                            Box(
+                                Modifier
+                                    .align(Alignment.TopEnd)
+                                    .padding(top = 8.dp, end = 8.dp)
+                                    .size(8.dp)
+                                    .clip(CircleShape)
+                                    .background(Accent),
+                            )
+                        }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -146,36 +171,40 @@ fun HomeScreen(
         },
         snackbarHost = { SnackbarHost(snackbarHost) },
     ) { innerPadding ->
-        Box(Modifier.fillMaxSize().padding(innerPadding)) {
-            when {
-                state.loading && state.categories.isEmpty() -> {
-                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator()
+        Column(Modifier.fillMaxSize().padding(innerPadding)) {
+            NoticeTicker(notices = state.notices, horizontalPadding = layout.padding.dp)
+
+            Box(Modifier.weight(1f)) {
+                when {
+                    state.loading && state.categories.isEmpty() -> {
+                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator()
+                        }
+                    }
+
+                    state.error != null && state.categories.isEmpty() -> {
+                        ErrorState(
+                            message = state.error.orEmpty(),
+                            onRetry = onRetry,
+                            modifier = Modifier.align(Alignment.Center),
+                        )
+                    }
+
+                    else -> {
+                        HomeContent(
+                            state = state,
+                            layout = layout,
+                            onOpenCategory = onOpenCategory,
+                            onPlayChannel = onPlayChannel,
+                            onToggleFavorite = onToggleFavorite,
+                            onOpenSettings = { showSettings = true },
+                        )
                     }
                 }
 
-                state.error != null && state.categories.isEmpty() -> {
-                    ErrorState(
-                        message = state.error.orEmpty(),
-                        onRetry = onRetry,
-                        modifier = Modifier.align(Alignment.Center),
-                    )
+                if (state.refreshing) {
+                    LinearProgressIndicator(Modifier.fillMaxWidth().align(Alignment.TopCenter))
                 }
-
-                else -> {
-                    HomeContent(
-                        state = state,
-                        layout = layout,
-                        onOpenCategory = onOpenCategory,
-                        onPlayChannel = onPlayChannel,
-                        onToggleFavorite = onToggleFavorite,
-                        onOpenSettings = { showSettings = true },
-                    )
-                }
-            }
-
-            if (state.refreshing) {
-                LinearProgressIndicator(Modifier.fillMaxWidth().align(Alignment.TopCenter))
             }
         }
     }
@@ -185,8 +214,75 @@ fun HomeScreen(
             apiUrl = state.apiUrl,
             autoPlay = state.autoPlay,
             showLogos = state.showLogos,
+            update = state.update,
+            updateAvailable = updateAvailable,
+            updateState = updateState,
             onDismiss = { showSettings = false },
             actions = settingsActions,
+        )
+    }
+
+    if (state.error != null && state.categories.isEmpty() && !state.loading && !errorDismissed) {
+        AlertDialog(
+            onDismissRequest = { },
+            title = { Text("Source theke response asheni") },
+            text = {
+                Text(
+                    "${state.error}\n\nReload korun, notun version check korun, ba app bondho korun.",
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = onRetry) { Text("Reload") }
+            },
+            dismissButton = {
+                Row {
+                    TextButton(
+                        onClick = {
+                            errorDismissed = true
+                            showSettings = true
+                        },
+                    ) { Text("App update") }
+                    TextButton(onClick = onClose) { Text("Close") }
+                }
+            },
+            containerColor = MaterialTheme.colorScheme.surface,
+            shape = RoundedCornerShape(22.dp),
+        )
+    }
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun NoticeTicker(notices: List<String>, horizontalPadding: Dp) {
+    if (notices.isEmpty()) return
+
+    val text = notices.joinToString("        •        ")
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(start = horizontalPadding, end = horizontalPadding, top = 2.dp, bottom = 8.dp)
+            .clip(RoundedCornerShape(50))
+            .background(MaterialTheme.colorScheme.surface)
+            .border(1.dp, Accent.copy(alpha = 0.28f), RoundedCornerShape(50))
+            .padding(horizontal = 14.dp, vertical = 9.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(
+            Modifier
+                .size(7.dp)
+                .clip(CircleShape)
+                .background(Accent),
+        )
+        Spacer(Modifier.width(10.dp))
+        Text(
+            text = text,
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+            modifier = Modifier
+                .weight(1f)
+                .basicMarquee(),
         )
     }
 }
@@ -274,28 +370,6 @@ private fun HomeContent(
 }
 
 @Composable
-fun BrandMark(size: Dp = 34.dp) {
-    Box(
-        modifier = Modifier
-            .size(size)
-            .clip(RoundedCornerShape(size * 0.3f))
-            .background(
-                Brush.linearGradient(
-                    listOf(Accent, Color(0xFF3B82F6)),
-                ),
-            ),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(
-            text = "X",
-            color = Color(0xFF04121A),
-            fontWeight = FontWeight.Black,
-            fontSize = (size.value * 0.52f).sp,
-        )
-    }
-}
-
-@Composable
 private fun HeroCard(categoryCount: Int, channelCount: Int, apiHost: String) {
     Box(
         modifier = Modifier
@@ -317,7 +391,14 @@ private fun HeroCard(categoryCount: Int, channelCount: Int, apiHost: String) {
             modifier = Modifier.align(Alignment.CenterEnd),
         )
         Row(verticalAlignment = Alignment.CenterVertically) {
-            BrandMark(size = 46.dp)
+            Image(
+                painter = painterResource(R.drawable.app_logo),
+                contentDescription = "X logo",
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .size(48.dp)
+                    .clip(RoundedCornerShape(12.dp)),
+            )
             Spacer(Modifier.width(14.dp))
             Column {
                 Row(verticalAlignment = Alignment.CenterVertically) {

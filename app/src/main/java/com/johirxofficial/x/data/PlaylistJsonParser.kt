@@ -33,16 +33,25 @@ object PlaylistJsonParser {
         arrayOf("url", "link", "stream", "stream_url", "src", "file", "source", "m3u8", "path", "hls", "uri")
     private val COUNT_KEYS = arrayOf("channels_count", "channel_count", "count", "total", "channels")
 
-    fun parseCategories(raw: String): List<Category> {
-        val root = jsonOrNull(raw) ?: return emptyList()
+    fun parseCategories(raw: String): List<Category> = parseCatalog(raw).categories
+
+    /** Parses categories plus the optional notices / app-update blocks. */
+    fun parseCatalog(raw: String): Catalog {
+        val root = jsonOrNull(raw) ?: return Catalog()
         val objects: List<JsonObject> = when (root) {
             is JsonArray -> root.mapNotNull { it as? JsonObject }
             is JsonObject -> categoryObjectsFrom(root)
             else -> emptyList()
         }
-        return objects
+        val categories = objects
             .mapIndexedNotNull { index, obj -> categoryFrom(obj, index) }
             .filter { it.name.isNotBlank() }
+        val container = root as? JsonObject
+        return Catalog(
+            categories = categories,
+            notices = container?.let(::noticesFrom).orEmpty(),
+            update = container?.let(::updateFrom),
+        )
     }
 
     /** Parses a plain list of channels (used when a category URL points to channel JSON). */
@@ -177,6 +186,49 @@ object PlaylistJsonParser {
             if (value is JsonArray) return value
         }
         return null
+    }
+
+    private fun firstObject(obj: JsonObject, vararg keys: String): JsonObject? {
+        for (key in keys) {
+            val value = obj.entries.firstOrNull { it.key.equals(key, ignoreCase = true) }?.value
+            if (value is JsonObject) return value
+        }
+        return null
+    }
+
+    private fun noticesFrom(root: JsonObject): List<String> {
+        val direct = noticeArray(root)
+        if (direct != null) {
+            return direct.mapNotNull(::noticeText)
+                .map { it.trim() }
+                .filter { it.isNotEmpty() && !it.equals("null", ignoreCase = true) }
+        }
+        val data = firstObject(root, "data") ?: return emptyList()
+        return noticeArray(data).orEmpty()
+            .mapNotNull(::noticeText)
+            .map { it.trim() }
+            .filter { it.isNotEmpty() }
+    }
+
+    private fun noticeArray(obj: JsonObject): JsonArray? =
+        firstArray(obj, "notices", "notice", "announcements", "messages", "alerts", "news")
+
+    private fun noticeText(element: JsonElement): String? = when (element) {
+        is JsonPrimitive -> element.contentOrNull
+        is JsonObject -> firstString(element, "text", "message", "notice", "title", "body")
+        else -> null
+    }
+
+    private fun updateFrom(root: JsonObject): AppUpdate? {
+        val obj = firstObject(root, "update", "app_update", "appUpdate", "app_info", "appInfo") ?: return null
+        val update = AppUpdate(
+            latestVersion = firstString(obj, "latest_version", "version_name", "version", "latest", "tag"),
+            versionCode = firstInt(obj, "version_code", "versionCode", "code", "build", "build_number"),
+            apkUrl = firstString(obj, "apk_url", "download_url", "apk", "url", "link"),
+            message = firstString(obj, "message", "notes", "changelog", "whats_new", "description"),
+            sizeMb = firstString(obj, "size_mb", "size")?.toDoubleOrNull(),
+        )
+        return update.takeIf { it.apkUrl != null || it.latestVersion != null }
     }
 
     private fun firstInt(obj: JsonObject, vararg keys: String): Int? {

@@ -26,12 +26,12 @@ class Repository(@Suppress("UNUSED_PARAMETER") context: Context) {
         .retryOnConnectionFailure(true)
         .build()
 
-    suspend fun categories(apiUrl: String): List<Category> = withContext(Dispatchers.IO) {
-        val categories = parseCategories(fetch(apiUrl))
-        if (categories.isEmpty()) {
+    suspend fun catalog(apiUrl: String): Catalog = withContext(Dispatchers.IO) {
+        val catalog = parseDocument(fetch(apiUrl))
+        if (catalog.categories.isEmpty()) {
             throw IOException("No category found at ${UrlUtils.hostOf(apiUrl)}")
         }
-        categories
+        catalog
     }
 
     suspend fun channels(category: Category): List<Channel> = withContext(Dispatchers.IO) {
@@ -53,16 +53,18 @@ class Repository(@Suppress("UNUSED_PARAMETER") context: Context) {
         channels
     }
 
-    private fun parseCategories(body: String): List<Category> = if (looksLikePlaylist(body)) {
-        listOf(
-            Category(
-                id = "playlist",
-                name = "Playlist",
-                inlineChannels = M3uParser.parse(body),
+    private fun parseDocument(body: String): Catalog = if (looksLikePlaylist(body)) {
+        Catalog(
+            categories = listOf(
+                Category(
+                    id = "playlist",
+                    name = "Playlist",
+                    inlineChannels = M3uParser.parse(body),
+                ),
             ),
         )
     } else {
-        PlaylistJsonParser.parseCategories(body)
+        PlaylistJsonParser.parseCatalog(body)
     }
 
     private fun looksLikePlaylist(body: String): Boolean {

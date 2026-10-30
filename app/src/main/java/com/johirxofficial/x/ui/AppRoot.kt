@@ -2,6 +2,7 @@ package com.johirxofficial.x.ui
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -17,6 +18,7 @@ private object Routes {
 fun AppRoot(viewModel: MainViewModel) {
     val navController = rememberNavController()
     val layout = rememberLayoutInfo()
+    val context = LocalContext.current
 
     val settingsActions = SettingsActions(
         saveApiUrl = viewModel::saveApiUrl,
@@ -28,6 +30,9 @@ fun AppRoot(viewModel: MainViewModel) {
             viewModel.refresh()
         },
         clearHistory = viewModel::clearHistory,
+        downloadUpdate = viewModel::downloadUpdate,
+        installUpdate = viewModel::installUpdate,
+        openUpdateLink = viewModel::openUpdateLink,
     )
 
     NavHost(navController = navController, startDestination = Routes.HOME) {
@@ -35,8 +40,11 @@ fun AppRoot(viewModel: MainViewModel) {
             HomeScreen(
                 state = viewModel.home,
                 layout = layout,
+                updateAvailable = viewModel.updateAvailable,
+                updateState = viewModel.updateState,
                 onRefresh = viewModel::refresh,
                 onRetry = viewModel::refresh,
+                onClose = { context.findActivity()?.finish() },
                 onOpenCategory = { category ->
                     viewModel.openCategory(category)
                     navController.navigate(Routes.CHANNELS)

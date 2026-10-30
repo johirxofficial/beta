@@ -39,3 +39,24 @@ data class Category(
     /** "country", "genre"... free form label from the API. */
     val type: String? = null,
 )
+
+/** Everything the API returns for the home screen. */
+@Immutable
+data class Catalog(
+    val categories: List<Category> = emptyList(),
+    val notices: List<String> = emptyList(),
+    val update: AppUpdate? = null,
+)
+
+/** "App update" block from the JSON catalog. */
+@Immutable
+data class AppUpdate(
+    val latestVersion: String? = null,
+    val versionCode: Int? = null,
+    val apkUrl: String? = null,
+    val message: String? = null,
+    val sizeMb: Double? = null,
+) {
+    fun isNewerThan(currentCode: Int): Boolean = versionCode?.let { it > currentCode } ?: false
+}
+

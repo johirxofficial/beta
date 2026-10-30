@@ -1,7 +1,7 @@
 {
     "app":  "X",
     "developer":  "johirxofficial",
-    "version":  3,
+    "version":  4,
     "updated":  "2026-10-30 01:53",
     "homepage":  "https://github.com/johirxofficial/x",
     "source":  "iptv-org public playlists + local Xtream panel",
@@ -1036,5 +1036,20 @@
                            "channels_count":  17,
                            "playlist_url":  "https://iptv-org.github.io/iptv/categories/weather.m3u"
                        }
-                   ]
+                   ],
+    "notices":  [
+                    "X v4.0.0 — Watch live from multiple servers.",
+                    "নতুন: Android TV রিমোট, Windows অ্যাপ, নোটিশ টিকার ও ইন-অ্যাপ আপডেট।",
+                    "চ্যানেল না চললে অন্য সার্ভার ট্রাই করুন বা উপরের রিলোড বাটনে চাপ দিন।",
+                    "নতুন ভার্সন এলে Settings → App update থেকে সরাসরি ইনস্টল করতে পারবেন।",
+                    "কোনো ক্যাশ নেই — প্রতিবার সার্ভার থেকে ফ্রেশ ডেটা আসে।"
+                ],
+    "update":  {
+                   "latest_version":  "4.0.0",
+                   "version_code":  4,
+                   "apk_url":  "https://github.com/johirxofficial/x/releases/latest/download/X-latest.apk",
+                   "desktop_url":  "https://github.com/johirxofficial/x/releases/latest",
+                   "message":  "নতুন ভার্সন 4.0.0 — দ্রুত লোড, নোটিশ টিকার, টিভি রিমোট, Windows অ্যাপ ও ইন-অ্যাপ আপডেট।",
+                   "size_mb":  9.3
+               }
 }

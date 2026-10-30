@@ -1,4 +1,4 @@
-name: Android CI
+name: CI
 
 on:
   push:
@@ -16,7 +16,7 @@ concurrency:
 
 jobs:
   build:
-    name: Build APK
+    name: Build Android APK
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -62,10 +62,42 @@ jobs:
           if-no-files-found: error
           retention-days: 30
 
+  desktop:
+    name: Build Windows EXE
+    if: github.event_name != 'pull_request'
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: desktop
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Build portable EXE
+        run: npm run dist
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+
+      - name: Upload Windows EXE
+        uses: actions/upload-artifact@v4
+        with:
+          name: x-windows-exe
+          path: desktop/release/*.exe
+          if-no-files-found: error
+          retention-days: 30
+
   release:
-    name: Publish APK
+    name: Publish release assets
     if: startsWith(github.ref, 'refs/tags/v')
-    needs: build
+    needs: [build, desktop]
     runs-on: ubuntu-latest
     steps:
       - name: Download release APK
@@ -74,15 +106,26 @@ jobs:
           name: x-release-apk
           path: dist
 
-      - name: Rename APK
+      - name: Download Windows EXE
+        uses: actions/download-artifact@v4
+        with:
+          name: x-windows-exe
+          path: dist
+
+      - name: Prepare release assets
+        shell: bash
         run: |
           cd dist
-          for f in *.apk; do mv "$f" "X-${GITHUB_REF_NAME}.apk"; done
+          for f in *.apk; do
+            cp "$f" "X-${GITHUB_REF_NAME}.apk"
+            cp "$f" "X-latest.apk"
+            rm "$f"
+          done
           ls -l
 
       - name: Create GitHub release
         uses: softprops/action-gh-release@v2
         with:
-          files: dist/*.apk
+          files: dist/*
           generate_release_notes: true
           fail_on_unmatched_files: true
