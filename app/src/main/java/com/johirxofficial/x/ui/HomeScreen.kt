@@ -1,6 +1,7 @@
 package com.johirxofficial.x.ui
 
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -466,10 +467,15 @@ private fun MiniChannelCard(
     onClick: () -> Unit,
     onToggleFavorite: () -> Unit,
 ) {
+    val interaction = remember { MutableInteractionSource() }
+    val focused by interaction.collectIsFocusedAsState()
+
     Card(
         onClick = onClick,
+        interactionSource = interaction,
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = if (focused) BorderStroke(2.dp, Accent) else null,
         modifier = Modifier.width(172.dp).height(78.dp),
     ) {
         Row(
